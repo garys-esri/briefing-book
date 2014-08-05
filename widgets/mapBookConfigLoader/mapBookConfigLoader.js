@@ -45,6 +45,12 @@ define([
 ], function (declare, array, lang, _WidgetBase, domConstruct, domAttr, domStyle, domClass, dom, on, query, topic, nls, esriPortal, arcgisUtils, config, cookie, kernel, esriRequest, urlUtils, IdentityManager, OAuthHelper, AlertBox, DeferredList, Deferred) {
     return declare([_WidgetBase], {
         _portal: null,
+        /**
+        * create mapbook config loader widget
+        *
+        * @class
+        * @name widgets/mapBookConfigLoader/mapBookConfigLoader
+        */
         startup: function () {
             var _self = this, deferred;
             _self.alertDialog = new AlertBox();
@@ -70,36 +76,56 @@ define([
 
             topic.subscribe("toggleUserLogInHandler", function () {
                 if (!domClass.contains(dom.byId("userLogIn"), "esriLogOutIcon")) {
-                    _self._displayLoginDialog(false);
+                    _self._createPortal(false);
                 } else {
                     _self._portal.signOut().then(function () {
-                        _self._queryOrgItems(false);
                         _self._removeCredentials();
+                        _self._queryOrgItems(false);
                         domClass.remove(dom.byId("userLogIn"), "esriLogOutIcon");
                         domAttr.set(dom.byId("userLogIn"), "title", nls.signInText);
                     });
                 }
             });
 
+            this._createPortal(deferred);
+            return deferred.promise;
+        },
+        /**
+        * create portal
+        * @memberOf widgets/mapBookConfigLoader/mapBookConfigLoader
+        */
+        _createPortal: function (deferred) {
+            var _self = this;
             if (dojo.appConfigData.PortalURL) {
                 this._portal = new esriPortal.Portal(dojo.appConfigData.PortalURL);
                 dojo.connect(_self._portal, 'onLoad', function () {
-                    _self._loadCredentials(deferred);
+                    if (deferred) {
+                        _self._loadCredentials(deferred);
+                    } else {
+                        _self._destroyCredentials();
+                        _self._displayLoginDialog(false);
+                    }
                 });
             } else {
-                deferred.reject();
-
+                if (deferred) {
+                    deferred.reject();
+                }
             }
-            return deferred.promise;
         },
 
+        /**
+        * display login dialog
+        * @memberOf widgets/mapBookConfigLoader/mapBookConfigLoader
+        */
         _displayLoginDialog: function (deferred) {
 
             var _self = this, queryParams;
+
             this._portal.signIn().then(function (loggedInUser) {
                 if (dom.byId("outerLoadingIndicator")) {
                     domStyle.set(dom.byId("outerLoadingIndicator"), "display", "block");
                 }
+                //empty book list global array
                 dojo.bookInfo = [];
                 queryParams = {
                     q: "tags:" + dojo.appConfigData.ConfigSearchTag,
@@ -108,30 +134,53 @@ define([
                     num: 100
                 };
                 _self._storeCredentials();
+                //set authoring mode true for user
                 dojo.appConfigData.AuthoringMode = true;
+
+                //toggle sign in icon image on application header
                 if (dom.byId("userLogIn")) {
                     domClass.add(dom.byId("userLogIn"), "esriLogOutIcon");
                     domAttr.set(dom.byId("userLogIn"), "title", nls.signOutText);
                     dojo.currentUser = loggedInUser.username;
                 }
+                //search accessible book item for logged in user
                 _self._portal.queryItems(queryParams).then(function (response) {
                     dojo.bookInfo = [];
                     topic.publish("destroyWebmapHandler");
                     topic.publish("_getPortal", _self._portal);
-                    _self._createConfigurationPanel(response);
+                    _self._getBookItemData(response);
 
                 });
             }, function (error) {
                 if (error.httpCode === 403) {
+                    // display alert message if logged in user is not a member of the configured organization
                     _self.alertDialog._setContent(nls.validateOrganizationUser, 0);
-                    IdentityManager.credentials[0].destroy();
+
                 }
+                _self._destroyCredentials();
                 if (dom.byId("outerLoadingIndicator")) {
                     domStyle.set(dom.byId("outerLoadingIndicator"), "display", "none");
                 }
             });
         },
 
+        /**
+        * destroy credentials when logged in user is not from configured organization
+        * @memberOf widgets/mapBookConfigLoader/mapBookConfigLoader
+        */
+        _destroyCredentials: function () {
+            var i;
+            for (i = 0; i < IdentityManager.credentials.length; i++) {
+                if (dojo.appConfigData.PortalURL === IdentityManager.credentials[i].server) {
+                    IdentityManager.credentials[i].destroy();
+                }
+            }
+        },
+
+        /**
+        * if valid credentials are found in localStorage/cookie then directly sign in with that
+        * @memberOf widgets/mapBookConfigLoader/mapBookConfigLoader
+        */
         _loadCredentials: function (deferred) {
             deferred.resolve();
             var idJson, idObject, i, isCredAvailable = false, signedInViaOAuth = false;
@@ -162,6 +211,7 @@ define([
                     idObject = JSON.parse(idJson);
                     for (i = 0; i < idObject.credentials.length; i++) {
                         if (dojo.appConfigData.PortalURL === idObject.credentials[i].server) {
+                            //load credential from local storage if it is not expired else ignore
                             if (idObject.credentials[i].expires > Date.now()) {
                                 isCredAvailable = true;
                                 kernel.id.initialize(idObject);
@@ -177,6 +227,10 @@ define([
             }
         },
 
+        /**
+        * check that local storage is supported by current browser or not
+        * @memberOf widgets/mapBookConfigLoader/mapBookConfigLoader
+        */
         _supports_local_storage: function () {
             try {
                 if (window && window.localStorage && window.localStorage !== null) {
@@ -187,6 +241,10 @@ define([
             }
         },
 
+        /**
+        * remove credential from localStorage/cookie if user gets sign-out
+        * @memberOf widgets/mapBookConfigLoader/mapBookConfigLoader
+        */
         _removeCredentials: function () {
 
             if (this._supports_local_storage()) {
@@ -198,6 +256,10 @@ define([
             }
         },
 
+        /**
+        * store credentials to localStorage/cookie if user signs in
+        * @memberOf widgets/mapBookConfigLoader/mapBookConfigLoader
+        */
         _storeCredentials: function () {
             if (kernel.id.credentials.length === 0) {
                 return;
@@ -212,9 +274,14 @@ define([
             }
         },
 
-        _createConfigurationPanel: function (response) {
+        /**
+        * get book data from result of searched items
+        * @memberOf widgets/mapBookConfigLoader/mapBookConfigLoader
+        */
+        _getBookItemData: function (response) {
             var deferArray, configData, deferList, bookIndex;
             deferArray = [];
+            //get json data of each item
             array.forEach(response.results, function (itemData) {
                 var defer = new Deferred();
                 deferArray.push(defer);
@@ -224,6 +291,7 @@ define([
                     handleAs: "json"
                 });
                 configData.then(function (itemInfo) {
+                    //check item is a valid briefing book item or not
                     if (itemInfo.BookConfigData && itemInfo.ModuleConfigData) {
                         try {
                             itemInfo.BookConfigData.itemId = itemData.id;
@@ -253,6 +321,10 @@ define([
             });
         },
 
+        /**
+        * query portal for book item for configured search tag
+        * @memberOf widgets/mapBookConfigLoader/mapBookConfigLoader
+        */
         _queryOrgItems: function () {
             var _self = this, queryParams;
             dojo.appConfigData.AuthoringMode = false;
@@ -262,15 +334,20 @@ define([
                 sortOrder: dojo.appConfigData.SortOrder,
                 num: 100
             };
+            // search public book item on portal
             _self._portal.queryItems(queryParams).then(function (response) {
                 dojo.bookInfo = [];
-                _self._createConfigurationPanel(response);
+                _self._getBookItemData(response);
             }, function (error) {
                 _self.alertDialog._setContent(nls.errorMessages.contentQueryError, 0);
                 domStyle.set(dom.byId("outerLoadingIndicator"), "display", "none");
             });
         },
 
+        /**
+        * save selected book on AGOL
+        * @memberOf widgets/mapBookConfigLoader/mapBookConfigLoader
+        */
         _saveSelectedBook: function () {
             var configObj, queryParam, currentItemId, requestUrl, requestType;
             domStyle.set(dom.byId("outerLoadingIndicator"), "display", "block");
@@ -285,6 +362,7 @@ define([
             };
             currentItemId = dojo.bookInfo[dojo.currentBookIndex].BookConfigData.itemId;
             if (currentItemId === nls.defaultItemId) {
+                // set required parameter for adding book item on AGOL
                 requestUrl = this._portal.getPortalUser().userContentUrl + '/addItem';
                 queryParam.type = 'Web Mapping Application';
                 queryParam.typeKeywords = 'JavaScript,Configurable';
@@ -300,6 +378,10 @@ define([
             this._sendEsriRequest(queryParam, requestUrl, requestType);
         },
 
+        /**
+        * delete selected book from AGOL
+        * @memberOf widgets/mapBookConfigLoader/mapBookConfigLoader
+        */
         _deleteBookItem: function () {
             var queryParam, currentItemId, requestUrl;
             domStyle.set(dom.byId("outerLoadingIndicator"), "display", "block");
@@ -312,6 +394,10 @@ define([
             this._sendEsriRequest(queryParam, requestUrl, "delete", nls.errorMessages.deletingItemError);
         },
 
+        /**
+        * copy selected book on AGOL
+        * @memberOf widgets/mapBookConfigLoader/mapBookConfigLoader
+        */
         _copyBookItem: function () {
             var configObj, bookTitle, queryParam, copiedConfig, requestUrl, requestType;
 
@@ -332,13 +418,18 @@ define([
                 text: configObj,
                 tags: dojo.appConfigData.ConfigSearchTag,
                 title: copiedConfig.BookConfigData.title,
-                type: 'Web Mapping Application'
+                type: 'Web Mapping Application',
+                typeKeywords: 'JavaScript,Configurable'
             };
             requestUrl = this._portal.getPortalUser().userContentUrl + '/addItem';
             requestType = "copy";
             this._sendEsriRequest(queryParam, requestUrl, requestType);
         },
 
+        /**
+        * send esri request to perform operation for adding, deleting and updating book item on portal
+        * @memberOf widgets/mapBookConfigLoader/mapBookConfigLoader
+        */
         _sendEsriRequest: function (queryParam, requestUrl, reqType) {
             var _self = this;
             esriRequest({
@@ -355,6 +446,7 @@ define([
                         }
                         topic.publish("destroyWebmapHandler");
                         setTimeout(function () {
+                            //reload all books in bookshelf if copy or delete operation is performed
                             _self._displayLoginDialog(false);
                         }, 2000);
                     } else {
@@ -366,11 +458,18 @@ define([
                     }
                 }
             }, function (err) {
+                // display error message if any operation is failed
                 _self._genrateErrorMessage(reqType, err);
                 domStyle.set(dom.byId("outerLoadingIndicator"), "display", "none");
             });
         },
 
+        /**
+        * display error message if performed operation gets failed
+        * @param{string} reqType is the type of operation which has failed
+        * @param{object} err is the error caught by esri request's error handler
+        * @memberOf widgets/mapBookConfigLoader/mapBookConfigLoader
+        */
         _genrateErrorMessage: function (reqType, err) {
             var errorMsg;
             if (err.messageCode === "GWM_0003") {
@@ -387,14 +486,26 @@ define([
             this.alertDialog._setContent(errorMsg, 0);
         },
 
+        /**
+        * get full name of logged in user
+        * @memberOf widgets/mapBookConfigLoader/mapBookConfigLoader
+        */
         _getFullUserName: function () {
             return this._portal.getPortalUser().fullName;
         },
 
+        /**
+        * get portal when portal is initialized
+        * @memberOf widgets/mapBookConfigLoader/mapBookConfigLoader
+        */
         _getPortal: function () {
             return this._portal;
         },
 
+        /**
+        * set configured application theme
+        * @memberOf widgets/mapBookConfigLoader/mapBookConfigLoader
+        */
         _setApplicationTheme: function () {
             var cssURL;
             switch (dojo.appConfigData.ApplicationTheme) {
@@ -415,6 +526,10 @@ define([
             }
         },
 
+        /**
+        * get application url
+        * @memberOf widgets/mapBookConfigLoader/mapBookConfigLoader
+        */
         _getAppUrl: function () {
             var appUrl = parent.location.href.split('?');
             return appUrl[0];
