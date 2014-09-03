@@ -71,7 +71,6 @@ define([
             this._createSaveBookIcon();
             this._createDeletePageIcon();
             this._createTOCIcon();
-            this._createSignInBtn();
         },
 
         _setApplicationLogo: function () {
