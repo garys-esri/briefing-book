@@ -62,5 +62,5 @@ limitations under the License.
 A copy of the license is available in the repository's
 [LICENSE.txt](LICENSE.txt) file.
 
-[](Esri Tags: Local-Government Local Government Briefing Book State-Government State Government ArcGIS Defense and Intelligence Military)
+[](Esri Tags: Local-Government Local Government Briefing Book State-Government State Government ArcGIS Defense and Intelligence Military ArcGISSolutions)
 [](Esri Language: JavaScript)

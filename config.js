@@ -53,14 +53,15 @@ define([], function () {
         // e.g., something like "https://myOrg.maps.arcgis.com/" for an Online Organization
         PortalURL: "",
 
-        // OAuth application id; leave empty to have the app prompt for the Online Organization member's username and password
+        // OAuth application id; This parameter is only required for ArcGIS organizational accounts using Enterprise Logins.Leave empty if you are not using Enterprise Logins
         OAuthAppid: "", // e.g., something like "AFTKRmv16wj14N3z"
 
         // Location of your proxy file
         ProxyURL: "/proxy/proxy.ashx",
 
         // Location of your geometry service; necessary for loading webmaps that aren't in Web Map Mercator Auxiliary Sphere
-        GeometryServiceURL: "",
+        // Portal for ArcGIS organizations should replace the URL below with the organizations geometry service
+        GeometryServiceURL: "http://tasks.arcgisonline.com/arcgis/rest/services/Geometry/GeometryServer",
 
         // The unique tag given to each book. This tag will determine which books are visible in the Briefing Book application.
         ConfigSearchTag: '',
@@ -205,8 +206,8 @@ define([], function () {
             "webmap": {
                 map: '',
                 type: "webmap",
-                title: "Webmap title goes here",
-                caption: "Webmap caption goes here",
+                title: "Map title goes here",
+                caption: "Map caption goes here",
                 URL: '',
                 height: 230 // in pixel
             },
