@@ -13,7 +13,7 @@ The Briefing Book can be used to create new briefings and reports that include A
 ## Features
 
 * Create briefings and reports including ArcGIS maps, videos, photos, and written text
-* Share books with the public or individuals 
+* Share books with the public or individuals
 
 ## Instructions
 
@@ -62,5 +62,5 @@ limitations under the License.
 A copy of the license is available in the repository's
 [LICENSE.txt](LICENSE.txt) file.
 
-[](Esri Tags: Local-Government Local Government Briefing Book State-Government State Government ArcGIS Defense and Intelligence Military ArcGISSolutions)
+[](Esri Tags: ArcGISSolutions Local-Government Local Government Briefing Book State-Government State Government ArcGIS Defense and Intelligence Military ArcGISSolutions)
 [](Esri Language: JavaScript)
