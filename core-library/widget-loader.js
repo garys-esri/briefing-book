@@ -18,6 +18,7 @@
 //==================================================================================================================//
 define([
     "dojo/_base/declare",
+    "dojo/_base/lang",
     "dojo/i18n!nls/localized-strings",
     "dijit/_WidgetBase",
     "widgets/alert-dialog/alert-dialog",
@@ -25,36 +26,49 @@ define([
     "widgets/mapbook-collection/mapbook-collection",
     "widgets/mapbook-config-loader/mapbook-config-loader",
     "widgets/select-webmap/select-webmap",
-    "widgets/share-book/share-book",
-    "dojo/domReady!"
-], function (declare, nls, _WidgetBase, AlertBox, AppHeader, MapBookCollection, MapBookConfigLoader, SelectWebmap, ShareBook) {
+    "widgets/share-book/share-book"
+], function (declare, lang, nls, _WidgetBase, AlertBox, AppHeader, MapBookCollection, MapBookConfigLoader, SelectWebmap, ShareBook) {
     return declare([_WidgetBase], {
         nls: nls,
+        /**
+        * create widget loader
+        *
+        * @class
+        * @name widgets/core-library/widget-loader
+        */
         startup: function () {
             var mapbookLoader, mapBookCollection, applicationHeader, sharebook, alertDialog, selectWebmap;
+            //create alert dialog object
+            alertDialog = new AlertBox();
             try {
-                mapbookLoader = new MapBookConfigLoader();
-                mapbookLoader.startup().then(function (response) {
-                    mapBookCollection = new MapBookCollection();
+                //initialize mapbook-config-loader widget to create portal.
+                mapbookLoader = new MapBookConfigLoader({ alertDialog: alertDialog });
+                mapbookLoader.startup().then(function () {
+                    //initialize map map-book-collection widget to create book gallery UI.
+                    mapBookCollection = new MapBookCollection({ alertDialog: alertDialog });
                     mapBookCollection.startup();
-                    applicationHeader = new AppHeader();
+                    //initialize  app-header widget to create application header UI.
+                    applicationHeader = new AppHeader({ alertDialog: alertDialog });
                     applicationHeader.startup();
-                    selectWebmap = new SelectWebmap();
+                    // initialize select-webmap widget to create webmap navigation widget to search webmap on AGOL.
+                    selectWebmap = new SelectWebmap({ alertDialog: alertDialog });
                     selectWebmap.startup();
-                    sharebook = new ShareBook();
+                    //initialize share-book widget to create share dialog to share book on AGOL.
+                    sharebook = new ShareBook({ alertDialog: alertDialog });
                     sharebook.startup();
                 }, function () {
                     var message = "";
-                    if (dojo.appConfigData.PortalURL) {
+                    if (dojo.appConfigData.PortalURL && lang.trim(dojo.appConfigData.PortalURL) !== "") {
+                        //display error message if any widget fails to load.
                         message = nls.errorMessages.configurationError;
                     } else {
+                        //display error message if portal URL is not configured.
                         message = nls.errorMessages.organizationNotSet;
                     }
-                    alertDialog = new AlertBox();
                     alertDialog._setContent(message, 0);
                 });
             } catch (ex) {
-                alertDialog = new AlertBox();
+                //display error message if any widget fails to load.
                 alertDialog._setContent(nls.errorMessages.configurationError, 0);
             }
         }

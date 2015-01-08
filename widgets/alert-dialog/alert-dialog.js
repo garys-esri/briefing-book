@@ -17,7 +17,6 @@
  */
 define([
     "dojo/_base/declare",
-    "dojo/_base/array",
     "dojo/_base/Deferred",
     "dojo/_base/lang",
     "dijit/_WidgetBase",
@@ -25,45 +24,60 @@ define([
     "dojo/dom-construct",
     "dojo/dom-attr",
     "dojo/dom-style",
-    "dojo/dom-class",
-    "dojo/dom",
     "dojo/on",
-    "dojo/query",
     "dojo/i18n!nls/localized-strings"
-], function (declare, array, Deferred, lang, _WidgetBase, Dialog, domConstruct, domAttr, domStyle, domClass, dom, on, query, nls) {
+], function (declare, Deferred, lang, _WidgetBase, Dialog, domConstruct, domAttr, domStyle, on, nls) {
     return declare([_WidgetBase], {
+        alertDialogText: null,
+        buttonCancel: null,
+        buttonOK: null,
+        domNode: null,
+        /**
+        * create customized alert dialog
+        *
+        * @class
+        * @name widgets/alert-dialog/alert-dialog
+        */
         postCreate: function () {
-            var _self = this, alertDialogContent, alertButtons;
-
+            var alertDialogContent, alertButtons;
+            // create UI for alert dialog
             this.domNode = new Dialog({
                 "class": "esriAlertDialog",
                 draggable: false
             });
             this.domNode.startup();
+            //set tooltip for close button of alert dialog.
             this.domNode.closeButtonNode.title = nls.closeButtonTitle;
-            alertDialogContent = domConstruct.create("div", { "clasS": "esriAlertDialogContent" }, null);
-            this.alertDialogText = domConstruct.create("div", { "class": "esriAlertDialogText", "innerHTML": "enter Text here" }, alertDialogContent);
+            alertDialogContent = domConstruct.create("div", { "class": "esriAlertDialogContent" }, null);
+            //create div to display text message.
+            this.alertDialogText = domConstruct.create("div", { "class": "esriAlertDialogText" }, alertDialogContent);
             alertButtons = domConstruct.create("div", { "class": "esriAlertButtonContainer" }, alertDialogContent);
-            this.button2 = domConstruct.create("div", { "class": "esriAlertCancelBtn", "innerHTML": nls.cancelButtonText, "value": "1" }, alertButtons);
-            this.button1 = domConstruct.create("div", { "class": "esriAlertOkBtn", "innerHTML": nls.okButtonText, "value": "0" }, alertButtons);
-            on(this.button1, "click", function () {
-                _self._hide(this);
-            });
-            on(this.button2, "click", function () {
-                _self._hide(this);
-            });
+            //create 'OK' and 'Cancel' button.
+            this.buttonCancel = domConstruct.create("div", { "class": "esriAlertCancelBtn", "innerHTML": nls.cancelButtonText, "value": "1" }, alertButtons);
+            this.buttonOK = domConstruct.create("div", { "class": "esriAlertOkBtn", "innerHTML": nls.okButtonText, "value": "0" }, alertButtons);
+            on(this.buttonOK, "click", lang.hitch(this, this._hide, this.buttonOK));
+            on(this.buttonCancel, "click", lang.hitch(this, this._hide, this.buttonCancel));
             this.domNode.setContent(alertDialogContent);
         },
 
-        _setContent: function (newContent, MessageBoxButtons) {
+        /**
+        * create content for alert dialog
+        * @param {string} newContent is new message/text to display in alert dialog
+        * @param {int} MessageBoxButtons decides no of buttons in alert dialog
+        * @memberOf widgets/alert-dialog/alert-dialog
+        */
+        _setContent: function (newContent, messageBoxButtons) {
             this.defer = false;
             this.alertDialogText.innerHTML = newContent;
-            if (MessageBoxButtons === 0) {
-                domStyle.set(this.button2, "display", "none");
+            if (messageBoxButtons === 0) {
+                //display dialog for showing alert message
+                domStyle.set(this.buttonCancel, "display", "none");
                 this.domNode.titleNode.innerHTML = nls.alertDialogTitle;
-            } else if (MessageBoxButtons === 1) {
+            } else if (messageBoxButtons === 1) {
+                //use defer to wait for the user response for the confirmation.
                 this.defer = new Deferred();
-                domStyle.set(this.button2, "display", "block");
+                //display dialog for confirmation
+                domStyle.set(this.buttonCancel, "display", "block");
                 this.domNode.titleNode.innerHTML = nls.confirmDialogTitle;
             }
             this.domNode.show();
@@ -74,9 +88,16 @@ define([
             }
         },
 
+        /**
+        * hide alert dialog
+        * @param {object} btnNode is button object in alert dialog ,which has clicked.
+        * @memberOf widgets/alert-dialog/alert-dialog
+        */
         _hide: function (btnNode) {
             var btnValue, value;
+            //check, which button (OK or Cancel) is clicked.
             btnValue = domAttr.get(btnNode, "value");
+            //return true if 'OK' button is clicked else return false.
             value = btnValue === "0" ? true : false;
             this.domNode.hide();
             if (this.defer) {

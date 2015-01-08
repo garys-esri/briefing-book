@@ -25,10 +25,8 @@ require([
     "widgets/alert-dialog/alert-dialog",
     "esri/config",
     "esri/arcgis/utils",
-    "esri/tasks/GeometryService",
-    "dojo/Deferred",
     "dojo/domReady!"
-], function (WidgetLoader, config, IdentityManager, OAuthHelper, AlertBox, esriConfig, arcgisUtils, GeometryService, Deferred, domReady) {
+], function (WidgetLoader, config, IdentityManager, OAuthHelper, AlertBox, esriConfig, arcgisUtils) {
 
     //========================================================================================================================//
 
@@ -73,10 +71,6 @@ require([
             esriConfig.defaults.io.alwaysUseProxy = false;
         }
 
-        // Set the geometry helper service to be the app default.
-        if (dojo.appConfigData.GeometryServiceURL) {
-            esriConfig.defaults.geometryService = new GeometryService(dojo.appConfigData.GeometryServiceURL);
-        }
     }
 
     try {
@@ -91,11 +85,12 @@ require([
         esriConfig.defaults.io.corsDetection = true;
         esriConfig.defaults.io.corsEnabledServers.push(dojo.appConfigData.PortalURL);
         esriConfig.defaults.io.timeout = 600000;
-
+        //initialize widget-loader.
         var applicationWidgetLoader = new WidgetLoader();
         applicationWidgetLoader.startup();
 
     } catch (ex) {
+        //display error message if any error occurred.
         this.alertDialog = new AlertBox();
         this.alertDialog._setContent(ex.message, 0);
     }

@@ -1,4 +1,4 @@
-﻿/*global define,dojo*/
+﻿/*global define,dojo, esriConfig*/
 /*jslint browser:true,sloppy:true,nomen:true,unparam:true,plusplus:true,indent:4 */
 /*
  | Copyright 2014 Esri
@@ -20,93 +20,89 @@ define([
     "dojo/_base/array",
     "dojo/_base/lang",
     "dijit/_WidgetBase",
-    "dojo/dom-construct",
     "dojo/dom-attr",
     "dojo/dom-style",
     "dojo/dom-class",
     "dojo/dom",
-    "dojo/on",
-    "dojo/query",
     "dojo/topic",
     "dojo/i18n!nls/localized-strings",
     "esri/arcgis/Portal",
     "esri/arcgis/utils",
-    "esri/config",
     "dojo/cookie",
+    "esri/tasks/GeometryService",
     "esri/kernel",
     "esri/request",
-    "esri/urlUtils",
     "esri/IdentityManager",
     "coreLibrary/oauth-helper",
-    "../alert-dialog/alert-dialog",
-    "dojo/DeferredList",
-    "dojo/_base/Deferred",
-    "dojo/parser"
-], function (declare, array, lang, _WidgetBase, domConstruct, domAttr, domStyle, domClass, dom, on, query, topic, nls, esriPortal, arcgisUtils, config, cookie, kernel, esriRequest, urlUtils, IdentityManager, OAuthHelper, AlertBox, DeferredList, Deferred) {
+    "dojo/promise/all",
+    "dojo/_base/Deferred"
+], function (declare, array, lang, _WidgetBase, domAttr, domStyle, domClass, dom, topic, nls, esriPortal, arcgisUtils, cookie, GeometryService, kernel, esriRequest, IdentityManager, OAuthHelper, promiseAll, Deferred) {
     return declare([_WidgetBase], {
         _portal: null,
         /**
         * create mapbook config loader widget
         *
         * @class
-        * @name widgets/mapBookConfigLoader/mapBookConfigLoader
+        * @name widgets/mapbook-config-loader/mapBookConfigLoader
         */
         startup: function () {
-            var _self = this, deferred;
-            _self.alertDialog = new AlertBox();
-            deferred = new Deferred();
-
+            var deferred = new Deferred();
+            this.defaultAuthoringMode = dojo.appConfigData.AuthoringMode;
+            dojo.appConfigData.AuthoringMode = false;
             this._setApplicationTheme();
 
-            topic.subscribe("saveBookHandler", function () {
-                _self._saveSelectedBook();
-            });
+            topic.subscribe("createPortal", lang.hitch(this, this._createPortal));
 
-            topic.subscribe("deleteItemHandler", function () {
-                _self._deleteBookItem();
-            });
+            topic.subscribe("saveBookHandler", lang.hitch(this, this._saveSelectedBook));
 
-            topic.subscribe("copySelectedBookHandler", function () {
-                _self._copyBookItem();
-            });
+            topic.subscribe("deleteItemHandler", lang.hitch(this, this._deleteBookItem));
 
-            topic.subscribe("getFullUserNameHandler", function (newBook) {
-                newBook.author = _self._getFullUserName();
-            });
+            topic.subscribe("copySelectedBookHandler", lang.hitch(this, this._copyBookItem));
 
-            topic.subscribe("toggleUserLogInHandler", function () {
+            topic.subscribe("getFullUserNameHandler", lang.hitch(this, function (newBook) {
+                newBook.author = this._getFullUserName();
+            }));
+
+            topic.subscribe("toggleUserLogInHandler", lang.hitch(this, function () {
                 if (!domClass.contains(dom.byId("userLogIn"), "esriLogOutIcon")) {
-                    _self._createPortal(false);
+                    this._createPortal(false);
                 } else {
-                    _self._portal.signOut().then(function () {
-                        _self._removeCredentials();
-                        _self._queryOrgItems(false);
+                    domStyle.set(dom.byId("outerLoadingIndicator"), "display", "block");
+                    this._portal.signOut().then(lang.hitch(this, function () {
+                        this._removeCredentials();
+                        this._queryOrgItems();
                         domClass.remove(dom.byId("userLogIn"), "esriLogOutIcon");
                         domAttr.set(dom.byId("userLogIn"), "title", nls.signInText);
-                    });
+                    }));
                 }
-            });
+            }));
 
             this._createPortal(deferred);
             return deferred.promise;
         },
         /**
         * create portal
-        * @memberOf widgets/mapBookConfigLoader/mapBookConfigLoader
+        * @memberOf widgets/mapBookConfigLoader/mapbook-config-loader
         */
         _createPortal: function (deferred) {
-            var _self = this;
+            //initialize portal
             if (dojo.appConfigData.PortalURL) {
                 this._portal = new esriPortal.Portal(dojo.appConfigData.PortalURL);
-                dojo.connect(_self._portal, 'onLoad', function () {
+                dojo.connect(this._portal, 'onLoad', lang.hitch(this, function () {
                     if (deferred) {
-                        _self._loadCredentials(deferred);
+                        //fetch geometry service URL from portal object.
+                        this._setGeometryServiceUrl();
+                        this._loadCredentials(deferred);
                     } else {
-                        _self._destroyCredentials();
-                        _self._displayLoginDialog(false);
+                        //destroy stored credential of logged in user.
+                        this._removeCredentials();
+                        this._destroyCredentials();
+                        //display sign in dialog.
+                        this._displayLoginDialog();
                     }
-                });
+                }));
             } else {
+                //reject defer
                 if (deferred) {
                     deferred.reject();
                 }
@@ -114,34 +110,42 @@ define([
         },
 
         /**
-        * display login dialog
-        * @memberOf widgets/mapBookConfigLoader/mapBookConfigLoader
+        *Set the geometry helper service.
+        * @memberOf widgets/mapbook-config-loader/mapbook-config-loader
         */
-        _displayLoginDialog: function (deferred) {
+        _setGeometryServiceUrl: function () {
+            if (this._portal.helperServices.geometry.url) {
+                esriConfig.defaults.geometryService = new GeometryService(this._portal.helperServices.geometry.url);
+            }
+        },
 
+        /**
+        * display login dialog
+        * @memberOf widgets/mapbook-config-loader/mapbook-config-loader
+        */
+        _displayLoginDialog: function () {
             var _self = this, queryParams;
-
             this._portal.signIn().then(function (loggedInUser) {
                 if (dom.byId("outerLoadingIndicator")) {
                     domStyle.set(dom.byId("outerLoadingIndicator"), "display", "block");
                 }
                 //empty book list global array
                 dojo.bookInfo = [];
-                queryParams = {
-                    q: "tags:" + dojo.appConfigData.ConfigSearchTag,
-                    sortField: dojo.appConfigData.SortField,
-                    sortOrder: dojo.appConfigData.SortOrder,
-                    num: 100
-                };
-                _self._storeCredentials();
-                //set authoring mode true for user
-                dojo.appConfigData.AuthoringMode = true;
-
-                //toggle sign in icon image on application header
-                if (dom.byId("userLogIn")) {
-                    domClass.add(dom.byId("userLogIn"), "esriLogOutIcon");
-                    domAttr.set(dom.byId("userLogIn"), "title", nls.signOutText);
-                    dojo.currentUser = loggedInUser.username;
+                queryParams = _self._setQueryParams();
+                if (loggedInUser) {
+                    _self._storeCredentials();
+                    //set authoring mode true for user
+                    if (_self.defaultAuthoringMode) {
+                        dojo.appConfigData.AuthoringMode = true;
+                    }
+                    //toggle sign in icon image on application header
+                    if (dom.byId("userLogIn")) {
+                        domClass.add(dom.byId("userLogIn"), "esriLogOutIcon");
+                        domAttr.set(dom.byId("userLogIn"), "title", nls.signOutText);
+                        dojo.currentUser = loggedInUser.username;
+                    }
+                } else {
+                    dojo.appConfigData.AuthoringMode = false;
                 }
                 //search accessible book item for logged in user
                 _self._portal.queryItems(queryParams).then(function (response) {
@@ -152,21 +156,17 @@ define([
 
                 });
             }, function (error) {
+                _self._destroyCredentials();
                 if (error.httpCode === 403) {
                     // display alert message if logged in user is not a member of the configured organization
                     _self.alertDialog._setContent(nls.validateOrganizationUser, 0);
-
-                }
-                _self._destroyCredentials();
-                if (dom.byId("outerLoadingIndicator")) {
-                    domStyle.set(dom.byId("outerLoadingIndicator"), "display", "none");
                 }
             });
         },
 
         /**
         * destroy credentials when logged in user is not from configured organization
-        * @memberOf widgets/mapBookConfigLoader/mapBookConfigLoader
+        * @memberOf widgets/mapbook-config-loader/mapbook-config-loader
         */
         _destroyCredentials: function () {
             var i;
@@ -179,7 +179,7 @@ define([
 
         /**
         * if valid credentials are found in localStorage/cookie then directly sign in with that
-        * @memberOf widgets/mapBookConfigLoader/mapBookConfigLoader
+        * @memberOf widgets/mapbook-config-loader/mapbook-config-loader
         */
         _loadCredentials: function (deferred) {
             deferred.resolve();
@@ -196,8 +196,7 @@ define([
                 signedInViaOAuth = false;
             }
             if (signedInViaOAuth) {
-                this._displayLoginDialog(false);
-
+                this._displayLoginDialog();
                 // Otherwise see if we've cached credentials
             } else {
                 if (this._supports_local_storage()) {
@@ -212,24 +211,23 @@ define([
                     for (i = 0; i < idObject.credentials.length; i++) {
                         if (dojo.appConfigData.PortalURL === idObject.credentials[i].server) {
                             //load credential from local storage if it is not expired else ignore
-                            if (idObject.credentials[i].expires > Date.now()) {
+                            if (idObject.credentials[i].expires > new Date().getTime()) {
                                 isCredAvailable = true;
                                 kernel.id.initialize(idObject);
-                                this._displayLoginDialog(deferred);
+                                this._displayLoginDialog();
                             }
                         }
                     }
                 }
-            }
-
-            if (!isCredAvailable) {
-                this._queryOrgItems();
+                if (!isCredAvailable) {
+                    this._queryOrgItems();
+                }
             }
         },
 
         /**
         * check that local storage is supported by current browser or not
-        * @memberOf widgets/mapBookConfigLoader/mapBookConfigLoader
+        * @memberOf widgets/mapbook-config-loader/mapbook-config-loader
         */
         _supports_local_storage: function () {
             try {
@@ -243,10 +241,9 @@ define([
 
         /**
         * remove credential from localStorage/cookie if user gets sign-out
-        * @memberOf widgets/mapBookConfigLoader/mapBookConfigLoader
+        * @memberOf widgets/mapbook-config-loader/mapbook-config-loader
         */
         _removeCredentials: function () {
-
             if (this._supports_local_storage()) {
                 window.localStorage.setItem(dojo.appConfigData.Credential, null, { expire: -1 });
             } else {
@@ -258,7 +255,7 @@ define([
 
         /**
         * store credentials to localStorage/cookie if user signs in
-        * @memberOf widgets/mapBookConfigLoader/mapBookConfigLoader
+        * @memberOf widgets/mapbook-config-loader/mapbook-config-loader
         */
         _storeCredentials: function () {
             if (kernel.id.credentials.length === 0) {
@@ -276,77 +273,125 @@ define([
 
         /**
         * get book data from result of searched items
-        * @memberOf widgets/mapBookConfigLoader/mapBookConfigLoader
+        * @memberOf widgets/mapbook-config-loader/mapbook-config-loader
         */
         _getBookItemData: function (response) {
-            var deferArray, configData, deferList, bookIndex;
-            deferArray = [];
+            var deferArray = [], bookIndex;
             //get json data of each item
             array.forEach(response.results, function (itemData) {
                 var defer = new Deferred();
                 deferArray.push(defer);
-                configData = esriRequest({
-                    url: itemData.itemDataUrl,
-                    itemId: itemData.id,
-                    handleAs: "json"
-                });
-                configData.then(function (itemInfo) {
-                    //check item is a valid briefing book item or not
-                    if (itemInfo.BookConfigData && itemInfo.ModuleConfigData) {
-                        try {
-                            itemInfo.BookConfigData.itemId = itemData.id;
-                            itemInfo.BookConfigData.owner = itemData.owner;
-                            itemInfo.BookConfigData.UnSaveEditsExists = false;
-                            defer.resolve(itemInfo);
-                        } catch (ex) {
-                            defer.resolve();
+                try {
+                    arcgisUtils.getItem(itemData.id).then(function (itemInfo) {
+                        //check if itemInfo is having BookConfigData and ModuleConfigData.
+                        if (itemInfo.itemData && itemInfo.itemData.BookConfigData && itemInfo.itemData.ModuleConfigData) {
+                            //set book id as itemId in book config.
+                            itemInfo.itemData.BookConfigData.itemId = itemInfo.item.id;
+                            //set item owner as owner in book config.
+                            itemInfo.itemData.BookConfigData.owner = itemInfo.item.owner;
+                            itemInfo.itemData.BookConfigData.UnSaveEditsExists = false;
+                            itemInfo.itemData.folderId = null;
+                            //save folder id of book item.
+                            if (itemInfo.item.ownerFolder) {
+                                itemInfo.itemData.folderId = itemInfo.item.ownerFolder;
+                            }
+                            defer.resolve(itemInfo.itemData);
+                        } else {
+                            defer.reject();
                         }
-                    } else {
-                        defer.resolve();
-                    }
-                }, function (e) {
-                    defer.resolve();
-                });
-                return defer;
+                    });
+                } catch (ex) {
+                    defer.reject();
+                }
             });
 
-            deferList = new DeferredList(deferArray);
-            deferList.then(function (results) {
+            //push all book data in bookInfo array.
+            promiseAll(deferArray).then(function (results) {
+                dojo.bookInfo = [];
                 for (bookIndex = 0; bookIndex < results.length; bookIndex++) {
-                    if (results[bookIndex][1]) {
-                        dojo.bookInfo.push(results[bookIndex][1]);
+                    if (results[bookIndex]) {
+                        dojo.bookInfo.push(results[bookIndex]);
                     }
                 }
+                //display book in author/public mode.
                 topic.publish("authoringModeHandler");
             });
         },
 
         /**
         * query portal for book item for configured search tag
-        * @memberOf widgets/mapBookConfigLoader/mapBookConfigLoader
+        * @memberOf widgets/mapbook-config-loader/mapbook-config-loader
         */
         _queryOrgItems: function () {
             var _self = this, queryParams;
             dojo.appConfigData.AuthoringMode = false;
-            queryParams = {
-                q: "tags:" + dojo.appConfigData.ConfigSearchTag,
-                sortField: dojo.appConfigData.SortField,
-                sortOrder: dojo.appConfigData.SortOrder,
-                num: 100
-            };
-            // search public book item on portal
-            _self._portal.queryItems(queryParams).then(function (response) {
-                dojo.bookInfo = [];
-                _self._getBookItemData(response);
-            }, function (error) {
-                _self.alertDialog._setContent(nls.errorMessages.contentQueryError, 0);
+            //get parameters to search books.
+            queryParams = _self._setQueryParams();
+            //search public book item on portal
+            if (queryParams) {
+                _self._portal.queryItems(queryParams).then(function (response) {
+                    dojo.bookInfo = [];
+                    _self._getBookItemData(response);
+                }, function () {
+                    _self.alertDialog._setContent(nls.errorMessages.contentQueryError, 0);
+                    domStyle.set(dom.byId("outerLoadingIndicator"), "display", "none");
+                });
+            }
+        },
+
+        /**
+        * set query parameter to search book items on portal
+        * @memberOf widgets/mapbook-config-loader/mapbook-config-loader
+        */
+        _setQueryParams: function () {
+            var queryString = '', queryParams, isSignInRequired;
+            if (dojo.appConfigData.DisplayBook && lang.trim(dojo.appConfigData.DisplayBook) !== "") {
+                dojo.appConfigData.DisplayBook = dojo.appConfigData.DisplayBook.toLowerCase();
+                switch (dojo.appConfigData.DisplayBook) {
+                case "group":
+                    //add group id in query string if 'displayGroup' is set to 'group' in config.
+                    if (lang.trim(dojo.appConfigData.DisplayGroup) !== "") {
+                        queryString = "group:" + dojo.appConfigData.DisplayGroup + " AND ";
+                    } else {
+                        this.alertDialog._setContent(nls.errorMessages.groupIdNotConfigured, 0);
+                        return;
+                    }
+                    break;
+                case "organization":
+                    //add group id in query string if 'displayGroup' is set to 'organization' in config.
+                    if (this._portal.id && lang.trim(this._portal.id) !== "") {
+                        queryString = "orgid:" + this._portal.id + " AND ";
+                    } else {
+                        //set parameter 'isSignInRequired' to true if configured organization is private.
+                        isSignInRequired = true;
+                    }
+                    break;
+                }
+                if (isSignInRequired) {
+                    dojo.bookInfo = [];
+                    //display sign in dialog.
+                    topic.publish("authoringModeHandler");
+                    this._displayLoginDialog();
+                } else {
+                    //set query parameters.
+                    queryString += "typekeywords:JavaScript AND type:Web Mapping Application AND tags:" + dojo.appConfigData.ConfigSearchTag;
+                    queryParams = {
+                        q: queryString,
+                        sortField: dojo.appConfigData.SortField,
+                        sortOrder: dojo.appConfigData.SortOrder,
+                        num: 100
+                    };
+                }
+            } else {
                 domStyle.set(dom.byId("outerLoadingIndicator"), "display", "none");
-            });
+                this.alertDialog._setContent(nls.errorMessages.configurationError, 0);
+            }
+            return queryParams;
         },
 
         /**
         * save selected book on AGOL
-        * @memberOf widgets/mapBookConfigLoader/mapBookConfigLoader
+        * @memberOf widgets/mapbook-config-loader/mapbook-config-loader
         */
         _saveSelectedBook: function () {
             var configObj, queryParam, currentItemId, requestUrl, requestType;
@@ -360,18 +405,22 @@ define([
                 overwrite: true,
                 url: ''
             };
+            requestUrl = this._portal.getPortalUser().userContentUrl;
             currentItemId = dojo.bookInfo[dojo.currentBookIndex].BookConfigData.itemId;
             if (currentItemId === nls.defaultItemId) {
                 // set required parameter for adding book item on AGOL
-                requestUrl = this._portal.getPortalUser().userContentUrl + '/addItem';
+                requestUrl += '/addItem';
                 queryParam.type = 'Web Mapping Application';
                 queryParam.typeKeywords = 'JavaScript,Configurable';
                 queryParam.title = dojo.bookInfo[dojo.currentBookIndex].BookConfigData.title;
                 queryParam.tags = dojo.appConfigData.ConfigSearchTag;
                 requestType = "add";
-
             } else {
-                requestUrl = this._portal.getPortalUser().userContentUrl + '/items/' + currentItemId + '/update';
+                // set folder id to save book to its current folder
+                if (dojo.bookInfo[dojo.currentBookIndex].folderId) {
+                    requestUrl += '/' + dojo.bookInfo[dojo.currentBookIndex].folderId;
+                }
+                requestUrl += '/items/' + currentItemId + '/update';
                 requestType = "update";
                 queryParam.url = this._getAppUrl() + '?bookId=' + currentItemId;
             }
@@ -380,7 +429,7 @@ define([
 
         /**
         * delete selected book from AGOL
-        * @memberOf widgets/mapBookConfigLoader/mapBookConfigLoader
+        * @memberOf widgets/mapbook-config-loader/mapbook-config-loader
         */
         _deleteBookItem: function () {
             var queryParam, currentItemId, requestUrl;
@@ -390,22 +439,30 @@ define([
                 overwrite: true
             };
             currentItemId = dojo.bookInfo[dojo.currentBookIndex].BookConfigData.itemId;
-            requestUrl = this._portal.getPortalUser().userContentUrl + '/items/' + currentItemId + '/delete';
+            requestUrl = this._portal.getPortalUser().userContentUrl;
+            // set folder id to delete book from its current folder
+            if (dojo.bookInfo[dojo.currentBookIndex].folderId) {
+                requestUrl += '/' + dojo.bookInfo[dojo.currentBookIndex].folderId;
+            }
+            requestUrl += '/items/' + currentItemId + '/delete';
             this._sendEsriRequest(queryParam, requestUrl, "delete", nls.errorMessages.deletingItemError);
         },
 
         /**
         * copy selected book on AGOL
-        * @memberOf widgets/mapBookConfigLoader/mapBookConfigLoader
+        * @memberOf widgets/mapbook-config-loader/mapbook-config-loader
         */
         _copyBookItem: function () {
             var configObj, bookTitle, queryParam, copiedConfig, requestUrl, requestType;
-
+            //create title for copied book.
             bookTitle = nls.copyKeyword + dojo.bookInfo[dojo.currentBookIndex].BookConfigData.title;
             domStyle.set(dom.byId("outerLoadingIndicator"), "display", "block");
             copiedConfig = lang.clone(dojo.bookInfo[dojo.currentBookIndex]);
+            //set default property of copied book.
             copiedConfig.BookConfigData.copyProtected = false;
             copiedConfig.BookConfigData.UnSaveEditsExists = false;
+            copiedConfig.BookConfigData.shareWithEveryone = false;
+            copiedConfig.BookConfigData.shareWithOrg = false;
             copiedConfig.BookConfigData.title = bookTitle;
             copiedConfig.ModuleConfigData.CoverPage.title.text = bookTitle;
             copiedConfig.BookConfigData.author = this._portal.getPortalUser().fullName;
@@ -421,6 +478,7 @@ define([
                 type: 'Web Mapping Application',
                 typeKeywords: 'JavaScript,Configurable'
             };
+            //create request URL to add new book.
             requestUrl = this._portal.getPortalUser().userContentUrl + '/addItem';
             requestType = "copy";
             this._sendEsriRequest(queryParam, requestUrl, requestType);
@@ -428,31 +486,34 @@ define([
 
         /**
         * send esri request to perform operation for adding, deleting and updating book item on portal
-        * @memberOf widgets/mapBookConfigLoader/mapBookConfigLoader
+        * @memberOf widgets/mapbook-config-loader/mapbook-config-loader
         */
         _sendEsriRequest: function (queryParam, requestUrl, reqType) {
             var _self = this;
             esriRequest({
                 url: requestUrl,
                 content: queryParam,
-                async: false,
                 handleAs: 'json'
             }, { usePost: true }).then(function (result) {
                 if (result.success) {
                     if (reqType === "copy" || reqType === "delete") {
                         if (reqType === "copy") {
                             dojo.bookInfo[dojo.currentBookIndex].BookConfigData.itemId = result.id;
-                            _self._saveSelectedBook();
+                            if (dojo.appConfigData.DisplayBook === "group") {
+                                topic.publish("shareBookHandler", true);
+                            }
                         }
                         topic.publish("destroyWebmapHandler");
                         setTimeout(function () {
-                            //reload all books in bookshelf if copy or delete operation is performed
-                            _self._displayLoginDialog(false);
+                            //reload all books in bookshelf if copy or delete operation is performed.
+                            _self._displayLoginDialog();
                         }, 2000);
                     } else {
                         dojo.bookInfo[dojo.currentBookIndex].BookConfigData.itemId = result.id;
                         if (reqType === "add") {
-                            _self._saveSelectedBook();
+                            if (dojo.appConfigData.DisplayBook === "group") {
+                                topic.publish("shareBookHandler", true);
+                            }
                         }
                         domStyle.set(dom.byId("outerLoadingIndicator"), "display", "none");
                     }
@@ -468,7 +529,7 @@ define([
         * display error message if performed operation gets failed
         * @param{string} reqType is the type of operation which has failed
         * @param{object} err is the error caught by esri request's error handler
-        * @memberOf widgets/mapBookConfigLoader/mapBookConfigLoader
+        * @memberOf widgets/mapbook-config-loader/mapbook-config-loader
         */
         _genrateErrorMessage: function (reqType, err) {
             var errorMsg;
@@ -488,7 +549,7 @@ define([
 
         /**
         * get full name of logged in user
-        * @memberOf widgets/mapBookConfigLoader/mapBookConfigLoader
+        * @memberOf widgets/mapbook-config-loader/mapbook-config-loader
         */
         _getFullUserName: function () {
             return this._portal.getPortalUser().fullName;
@@ -496,15 +557,15 @@ define([
 
         /**
         * get portal when portal is initialized
-        * @memberOf widgets/mapBookConfigLoader/mapBookConfigLoader
+        * @memberOf widgets/mapbook-config-loader/mapbook-config-loader
         */
         _getPortal: function () {
             return this._portal;
         },
 
         /**
-        * set configured application theme
-        * @memberOf widgets/mapBookConfigLoader/mapBookConfigLoader
+        * apply configured theme to application
+        * @memberOf widgets/mapbook-config-loader/mapbook-config-loader
         */
         _setApplicationTheme: function () {
             var cssURL;
@@ -527,12 +588,14 @@ define([
         },
 
         /**
-        * get application url
-        * @memberOf widgets/mapBookConfigLoader/mapBookConfigLoader
+        * get application URL
+        * @memberOf widgets/mapbook-config-loader/mapbook-config-loader
         */
         _getAppUrl: function () {
-            var appUrl = parent.location.href.split('?');
-            return appUrl[0];
+            var appUrl = parent.location.href.split('?')[0];
+            //remove '#' tag from URL.
+            appUrl = appUrl.replace('#', '');
+            return appUrl;
         }
     });
 });
