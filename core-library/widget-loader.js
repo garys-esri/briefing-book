@@ -18,14 +18,14 @@
 //==================================================================================================================//
 define([
     "dojo/_base/declare",
-    "dojo/i18n!nls/localizedStrings",
+    "dojo/i18n!nls/localized-strings",
     "dijit/_WidgetBase",
-    "widgets/alertDialog/alertDialog",
-    "widgets/appHeader/appHeader",
-    "widgets/mapBookCollection/mapBookCollection",
-    "widgets/mapBookConfigLoader/mapBookConfigLoader",
-    "widgets/selectWebmap/selectWebmap",
-    "widgets/shareBook/shareBook",
+    "widgets/alert-dialog/alert-dialog",
+    "widgets/app-header/app-header",
+    "widgets/mapbook-collection/mapbook-collection",
+    "widgets/mapbook-config-loader/mapbook-config-loader",
+    "widgets/select-webmap/select-webmap",
+    "widgets/share-book/share-book",
     "dojo/domReady!"
 ], function (declare, nls, _WidgetBase, AlertBox, AppHeader, MapBookCollection, MapBookConfigLoader, SelectWebmap, ShareBook) {
     return declare([_WidgetBase], {

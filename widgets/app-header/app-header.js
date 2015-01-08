@@ -26,14 +26,14 @@ define([
     "dojo/dom-class",
     "dojo/on",
     "dojo/query",
-    "dojo/text!./templates/appHeaderTemplate.html",
+    "dojo/text!./templates/app-header.html",
     "dojo/topic",
     "dijit/_WidgetBase",
     "dijit/_TemplatedMixin",
     "dijit/_WidgetsInTemplateMixin",
-    "dojo/i18n!nls/localizedStrings",
-    "../alertDialog/alertDialog",
-    "../mapBookCollection/mapbookUtility"
+    "dojo/i18n!nls/localized-strings",
+    "../alert-dialog/alert-dialog",
+    "../mapbook-collection/mapbook-utility"
 ], function (declare, domConstruct, lang, array, domAttr, domStyle, dom, domClass, on, query, template, topic, _WidgetBase, _TemplatedMixin, _WidgetsInTemplateMixin, nls, AlertBox, mapbookUtility) {
     return declare([_WidgetBase, _TemplatedMixin, _WidgetsInTemplateMixin, mapbookUtility], {
         templateString: template,

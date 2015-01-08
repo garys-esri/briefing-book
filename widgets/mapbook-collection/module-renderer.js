@@ -26,7 +26,7 @@ define([
     "dojo/dom",
     "dojo/on",
     "dojo/query",
-    "dojo/i18n!nls/localizedStrings",
+    "dojo/i18n!nls/localized-strings",
     "dojo/touch",
     "dojox/image/FlickrBadge",
     "dojox/image/Lightbox",

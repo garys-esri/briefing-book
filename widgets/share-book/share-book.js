@@ -29,10 +29,10 @@ define([
     "dojo/on",
     "dojo/query",
     "dojo/topic",
-    "dojo/i18n!nls/localizedStrings",
+    "dojo/i18n!nls/localized-strings",
     "esri/arcgis/Portal",
     "esri/request",
-    "../alertDialog/alertDialog",
+    "../alert-dialog/alert-dialog",
     "dojo/parser"
 ], function (declare, array, lang, _WidgetBase, Dialog, domConstruct, domAttr, domStyle, domClass, dom, on, query, topic, nls, Portal, esriRequest, AlertBox) {
     return declare([_WidgetBase], {

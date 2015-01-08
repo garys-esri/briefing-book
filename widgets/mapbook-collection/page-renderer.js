@@ -26,7 +26,7 @@ define([
     "dojo/dom",
     "dojo/on",
     "dojo/query",
-    "dojo/i18n!nls/localizedStrings",
+    "dojo/i18n!nls/localized-strings",
     "dijit/Dialog",
     "dojo/parser"
 ], function (declare, array, lang, domConstruct, domAttr, domStyle, domClass, dom, on, query, nls, Dialog) {
@@ -113,7 +113,7 @@ define([
             divEditPageList = domConstruct.create("div", { "class": "esriEditPageOptionList" }, divEditPageHeader);
             if (dojo.bookInfo[dojo.currentBookIndex].BookConfigData.CoverPage) {
                 imgOptionList = domConstruct.create("div", { "class": "esriEditPageOptionListImg" }, divEditPageList);
-                imgEditCoverPage = domConstruct.create("div", { "index": 0, "class": "esriEditPageImg esriBookPage esriPageSelected", "style": "background:url('themes/images/coverpage.png')" }, imgOptionList);
+                imgEditCoverPage = domConstruct.create("div", { "index": 0, "class": "esriEditPageImg esriBookPage esriPageSelected", "style": "background:url('themes/images/cover-page.png')" }, imgOptionList);
                 imgEditCoverPage.innerHTML = "Cover Page";
                 on(imgEditCoverPage, "click", function () {
                     _self._gotoPage(0);

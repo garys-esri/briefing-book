@@ -18,11 +18,11 @@
 //============================================================================================================================//
 
 require([
-    "coreLibrary/widgetLoader",
+    "coreLibrary/widget-loader",
     "application/config",
     "esri/IdentityManager",
-    "coreLibrary/OAuthHelper",
-    "widgets/alertDialog/alertDialog",
+    "coreLibrary/oauth-helper",
+    "widgets/alert-dialog/alert-dialog",
     "esri/config",
     "esri/arcgis/utils",
     "esri/tasks/GeometryService",

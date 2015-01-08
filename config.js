@@ -23,17 +23,17 @@ define([], function () {
         ApplicationName: "Briefing Book Gallery",
 
         // Set application icon path
-        ApplicationIcon: "themes/images/mapbookIcon.png",
+        ApplicationIcon: "themes/images/mapbook-app-icon.png",
 
         // Set application Favicon path
-        ApplicationFavicon: "themes/images/mapBookFavIco.ico",
+        ApplicationFavicon: "themes/images/mapbook-favicon.ico",
 
         // Set application home screen path
-        AppHomeScreenIcon: "themes/images/mapbookHomeIcon-grey.ico",
+        AppHomeScreenIcon: "themes/images/home-icon-grey.ico",
 
         // Authoring Mode not supported in this release.
         // Set application mode. Set to false for Public interface. Set to true for Admin interface
-        AuthoringMode: false, // false:      Public mode and true:      Editable mode
+        AuthoringMode: false, // false: Public mode and true: Editable mode
 
         // Set theme for application
         ApplicationTheme: "grey", // grey||blue.css
@@ -50,7 +50,7 @@ define([], function () {
         VimeoVideoUrl: "https://player.vimeo.com/video/",
 
         // The URL for your ArcGIS Online Organization or Portal for ArcGIS site,
-        // e.g., something like "https://myOrg.maps.arcgis.com/" for an Online Organization
+        // e.g., something like "https://myOrg.maps.arcgis.com" for an Online Organization
         PortalURL: "",
 
         // OAuth application id; This parameter is only required for ArcGIS organizational accounts using Enterprise Logins.Leave empty if you are not using Enterprise Logins
@@ -64,7 +64,7 @@ define([], function () {
         GeometryServiceURL: "http://tasks.arcgisonline.com/arcgis/rest/services/Geometry/GeometryServer",
 
         // The unique tag given to each book. This tag will determine which books are visible in the Briefing Book application.
-        ConfigSearchTag: '',
+        ConfigSearchTag: "",
 
         // cookie/local storage name  for storing user credential
         Credential: "esribriefingbookcredential",
@@ -104,8 +104,8 @@ define([], function () {
             Name: "ContentLayout1",
             columnWidth: [50, 50],
             columns: 2,
-            templateIcon: "themes/images/contentLayout1.png",
-            selectedTemplateIcon: "themes/images/contentLayout1-select.png",
+            templateIcon: "themes/images/content-layout1.png",
+            selectedTemplateIcon: "themes/images/content-layout1-select.png",
             content: [
                 ["text", "TOC"],
                 ["webmap"]
@@ -119,8 +119,8 @@ define([], function () {
             Name: "ContentLayout2",
             columns: 2,
             columnWidth: [50, 50],
-            templateIcon: "themes/images/contentLayout2.png",
-            selectedTemplateIcon: "themes/images/contentLayout2-select.png",
+            templateIcon: "themes/images/content-layout2.png",
+            selectedTemplateIcon: "themes/images/content-layout2-select.png",
             content: [
                 ["webmap", "text"],
                 ["TOC"]
@@ -133,8 +133,8 @@ define([], function () {
             Name: "ContentLayout3",
             columns: 2,
             columnWidth: [50, 50],
-            templateIcon: "themes/images/contentLayout3.png",
-            selectedTemplateIcon: "themes/images/contentLayout3-select.png",
+            templateIcon: "themes/images/content-layout3.png",
+            selectedTemplateIcon: "themes/images/content-layout3-select.png",
             content: [
                 ["TOC"],
                 ["text", "webmap"]
@@ -281,31 +281,31 @@ define([], function () {
         DefaultModuleIcons: {
             "webmap": {
                 type: "webmap",
-                URL: "themes/images/mapIcon.png"
+                URL: "themes/images/map-icon.png"
             },
             "image": {
                 type: "image",
-                URL: "themes/images/imageIcon.png"
+                URL: "themes/images/image-icon.png"
             },
             "logo": {
                 type: "logo",
-                URL: "themes/images/imageIcon.png"
+                URL: "themes/images/image-icon.png"
             },
             "text": {
                 type: "text",
-                URL: "themes/images/textIcon.png"
+                URL: "themes/images/text-icon.png"
             },
             "HTML": {
                 type: "HTML",
-                URL: "themes/images/htmlIcon.png"
+                URL: "themes/images/html-icon.png"
             },
             "video": {
                 type: "video",
-                URL: "themes/images/videoIcon.png"
+                URL: "themes/images/video-icon.png"
             },
             "flickr": {
                 type: "flickr",
-                URL: "themes/images/flickrIcon.png"
+                URL: "themes/images/flickr-icon.png"
             }
         }
     };

@@ -28,7 +28,7 @@ define([
     "dojo/on",
     "dojo/query",
     "dojo/topic",
-    "dojo/i18n!nls/localizedStrings",
+    "dojo/i18n!nls/localized-strings",
     "esri/arcgis/Portal",
     "esri/arcgis/utils",
     "esri/config",
@@ -37,8 +37,8 @@ define([
     "esri/request",
     "esri/urlUtils",
     "esri/IdentityManager",
-    "coreLibrary/OAuthHelper",
-    "../alertDialog/alertDialog",
+    "coreLibrary/oauth-helper",
+    "../alert-dialog/alert-dialog",
     "dojo/DeferredList",
     "dojo/_base/Deferred",
     "dojo/parser"
@@ -510,15 +510,15 @@ define([
             var cssURL;
             switch (dojo.appConfigData.ApplicationTheme) {
             case "blue":
-                cssURL = "themes/styles/theme_blue.css";
+                cssURL = "themes/styles/theme-blue.css";
                 break;
 
             case "grey":
-                cssURL = "themes/styles/theme_grey.css";
+                cssURL = "themes/styles/theme-grey.css";
                 break;
 
             default:
-                cssURL = "themes/styles/theme_grey.css";
+                cssURL = "themes/styles/theme-grey.css";
                 break;
             }
             if (dom.byId("appTheme")) {

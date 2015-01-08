@@ -29,7 +29,7 @@ define([
     "dojo/dom",
     "dojo/on",
     "dojo/query",
-    "dojo/i18n!nls/localizedStrings"
+    "dojo/i18n!nls/localized-strings"
 ], function (declare, array, Deferred, lang, _WidgetBase, Dialog, domConstruct, domAttr, domStyle, domClass, dom, on, query, nls) {
     return declare([_WidgetBase], {
         postCreate: function () {

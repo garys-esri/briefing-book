@@ -36,7 +36,7 @@ define([
     "esri/dijit/Legend",
     "esri/dijit/TimeSlider",
     "esri/TimeExtent",
-    "../mapBookCollection/mapbookUtility",
+    "../mapbook-collection/mapbook-utility",
     "dojo/parser"
 ], function (declare, domConstruct, domAttr, domStyle, domClass, dom, on, query, Memory, Editor, ComboBox, Textarea, ValidationTextBox, FontChoice, LinkDialog, TextColor, HomeButton, LegendDijit, TimeSlider, TimeExtent, mapbookUtility) {
     return declare([mapbookUtility], {

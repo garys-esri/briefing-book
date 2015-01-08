@@ -26,7 +26,7 @@ define([
     "dojo/dnd/Source",
     "dojo/on",
     "dojo/query",
-    "dojo/i18n!nls/localizedStrings",
+    "dojo/i18n!nls/localized-strings",
     "dojo/parser"
 ], function (declare, lang, domConstruct, domAttr, domStyle, domClass, dom, DndSource, on, query, nls) {
     return declare([], {
