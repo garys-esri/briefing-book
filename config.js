@@ -23,34 +23,41 @@ define([], function () {
         ApplicationName: "Briefing Book Gallery",
 
         // Set application icon path
-        ApplicationIcon: "themes/images/mapbookIcon.png",
+        ApplicationIcon: "themes/images/mapbook-app-icon.png",
 
         // Set application Favicon path
-        ApplicationFavicon: "themes/images/mapBookFavIco.ico",
+        ApplicationFavicon: "themes/images/mapbook-favicon.ico",
 
         // Set application home screen path
-        AppHomeScreenIcon: "themes/images/mapbookHomeIcon-grey.ico",
+        AppHomeScreenIcon: "themes/images/home-icon-grey.ico",
 
         // Authoring Mode not supported in this release.
         // Set application mode. Set to false for Public interface. Set to true for Admin interface
-        AuthoringMode: false, // false:      Public mode and true:      Editable mode
+        AuthoringMode: true, // false: Public mode and true: Editable mode
 
         // Set theme for application
         ApplicationTheme: "grey", // grey||blue.css
 
+        // Set Briefing Book icon
         BriefingBookCoverIcon: "themes/images/map-book-bg-grey.png",
 
-        // video url for YouTube
+        // Set search level for books
+        DisplayBook: "all", //organization, all, group
+
+        // Set group id if 'DisplayBook' is set to 'group'
+        DisplayGroup: "918908e2f84c4dc8a0ab0beb2849ea6c", // "0aec46fd1c264403b28469dac01ecd2c", //"f31c2a1296d84ea892bb557a796e5ebd",
+
+        // Video URL for YouTube
         YouTubeVideoUrl: "https://www.youtube.com/embed/",
 
-        // video url for Esri
+        // Video URL for Esri
         EsriVideoUrl: "https://video.esri.com/iframe/",
 
-        // video url for Vimeo
+        // Video URL for Vimeo
         VimeoVideoUrl: "https://player.vimeo.com/video/",
 
         // The URL for your ArcGIS Online Organization or Portal for ArcGIS site,
-        // e.g., something like "https://myOrg.maps.arcgis.com/" for an Online Organization
+        // e.g., something like "https://myOrg.maps.arcgis.com" for an Online Organization
         PortalURL: "",
 
         // OAuth application id; This parameter is only required for ArcGIS organizational accounts using Enterprise Logins.Leave empty if you are not using Enterprise Logins
@@ -59,12 +66,8 @@ define([], function () {
         // Location of your proxy file
         ProxyURL: "/proxy/proxy.ashx",
 
-        // Location of your geometry service; necessary for loading webmaps that aren't in Web Map Mercator Auxiliary Sphere
-        // Portal for ArcGIS organizations should replace the URL below with the organizations geometry service
-        GeometryServiceURL: "http://tasks.arcgisonline.com/arcgis/rest/services/Geometry/GeometryServer",
-
         // The unique tag given to each book. This tag will determine which books are visible in the Briefing Book application.
-        ConfigSearchTag: '',
+        ConfigSearchTag: "",
 
         // cookie/local storage name  for storing user credential
         Credential: "esribriefingbookcredential",
@@ -73,7 +76,10 @@ define([], function () {
         MaxWebMapCount: 100,
 
         // display no of webmap thumbnail in' Select webmap' dialog
-        webmapPerPage: 10,
+        WebmapPerPage: 10,
+
+        //set path for default webmap thumbnail
+        DefaultWebmapThumbnail: "themes/images/not-available.png",
 
         // Sorting field
         SortField: 'owner', // Values:title | owner | avgRating |numViews| created | modified
@@ -85,7 +91,7 @@ define([], function () {
         /* cover page layout contains layout for index page*/
         CoverPageLayout: {
             title: "Briefing Book Title",
-            Name: "coverPageLayout1",
+            name: "coverPageLayout1",
             columns: 2,
             columnWidth: [50, 50],
             content: [
@@ -101,11 +107,11 @@ define([], function () {
         },
         /* content page layout contains layout for content page */
         ContentPageLayouts: [{
-            Name: "ContentLayout1",
+            name: "ContentLayout1",
             columnWidth: [50, 50],
             columns: 2,
-            templateIcon: "themes/images/contentLayout1.png",
-            selectedTemplateIcon: "themes/images/contentLayout1-select.png",
+            templateIcon: "themes/images/content-layout1.png",
+            selectedTemplateIcon: "themes/images/content-layout1-select.png",
             content: [
                 ["text", "TOC"],
                 ["webmap"]
@@ -116,11 +122,11 @@ define([], function () {
             ],
             type: "ContentPage"
         }, {
-            Name: "ContentLayout2",
+            name: "ContentLayout2",
             columns: 2,
             columnWidth: [50, 50],
-            templateIcon: "themes/images/contentLayout2.png",
-            selectedTemplateIcon: "themes/images/contentLayout2-select.png",
+            templateIcon: "themes/images/content-layout2.png",
+            selectedTemplateIcon: "themes/images/content-layout2-select.png",
             content: [
                 ["webmap", "text"],
                 ["TOC"]
@@ -130,11 +136,11 @@ define([], function () {
                 [400]
             ]
         }, {
-            Name: "ContentLayout3",
+            name: "ContentLayout3",
             columns: 2,
             columnWidth: [50, 50],
-            templateIcon: "themes/images/contentLayout3.png",
-            selectedTemplateIcon: "themes/images/contentLayout3-select.png",
+            templateIcon: "themes/images/content-layout3.png",
+            selectedTemplateIcon: "themes/images/content-layout3-select.png",
             content: [
                 ["TOC"],
                 ["text", "webmap"]
@@ -144,9 +150,10 @@ define([], function () {
                 [50, 250]
             ]
         }],
+
         /* book page layout contains layout for different pages of books */
         BookPageLayouts: [{
-            Name: "TwoColumnLayout",
+            name: "TwoColumnLayout",
             columnWidth: [40, 60],
             columns: 2,
             templateIcon: "themes/images/temp1.png",
@@ -160,7 +167,7 @@ define([], function () {
                 [250]
             ]
         }, {
-            Name: "MostlyText",
+            name: "MostlyText",
             columns: 2,
             columnWidth: [50, 50],
             templateIcon: "themes/images/temp2.png",
@@ -175,7 +182,7 @@ define([], function () {
             ]
 
         }, {
-            Name: "OneColumnLayout",
+            name: "OneColumnLayout",
             columns: 1,
             columnWidth: [100],
             templateIcon: "themes/images/temp3.png",
@@ -188,7 +195,7 @@ define([], function () {
             ]
 
         }, {
-            Name: "DominantVisual",
+            name: "DominantVisual",
             columns: 2,
             columnWidth: [30, 70],
             templateIcon: "themes/images/temp4.png",
@@ -202,12 +209,13 @@ define([], function () {
                 [335]
             ]
         }],
+
         ModuleDefaultsConfig: {
             "webmap": {
                 map: '',
                 type: "webmap",
-                title: "Map title goes here",
-                caption: "Map caption goes here",
+                title: "webmapModuleTitleText",
+                caption: "webmapModuleCaptionText",
                 URL: '',
                 height: 230 // in pixel
             },
@@ -219,24 +227,23 @@ define([], function () {
             },
             "text": {
                 type: "text",
-                text: "Add text here",
+                text: "textModuleDefaultText",
                 height: 40 // in pixel
             },
             "HTML": {
                 type: "HTML",
-                HTML: "<p>Add HTML here</p>",
+                HTML: "HTMLModuleDefaultText",
                 height: 100 // in pixel
             },
             "image": {
                 type: "image",
                 URL: "",
-                height: 100,
-                width: '' // in pixel
+                height: 100
             },
             "video": {
                 type: "video",
-                title: "Video title",
-                caption: "The video caption",
+                title: "videoModuleTitleText",
+                caption: "videoModuleCaptionText",
                 URL: '',
                 height: 250 // in pixel
             },
@@ -247,6 +254,7 @@ define([], function () {
                 title: '',
                 caption: '',
                 URL: '',
+                tags: '',
                 rows: 5,
                 columns: 5,
                 height: 250 // in pixel
@@ -261,53 +269,70 @@ define([], function () {
                 height: 200 // in pixel
             },
             "author": {
-                text: "Author",
+                text: "authorName",
                 type: "text",
                 uid: "Author",
-                height: 50
+                height: 50  // in pixel
             },
             "date": {
-                text: "Date and/or other information here",
+                text: "dateModuleText",
                 type: "text",
                 uid: "date",
-                height: 20
+                height: 20  // in pixel
             },
             "subtitle": {
                 type: "text",
-                text: "This is a subtitle or brief descriptive blurb about my map book. It's optional, but recommended. People will get a better sense of what the book is about if there's a descriptive subtitle here.",
-                height: 40
+                text: "subtitleModuleText",
+                height: 40  // in pixel
             }
         },
+
         DefaultModuleIcons: {
             "webmap": {
                 type: "webmap",
-                URL: "themes/images/mapIcon.png"
+                URL: "themes/images/map-icon.png"
             },
             "image": {
                 type: "image",
-                URL: "themes/images/imageIcon.png"
+                URL: "themes/images/image-icon.png"
             },
             "logo": {
                 type: "logo",
-                URL: "themes/images/imageIcon.png"
+                URL: "themes/images/image-icon.png"
             },
             "text": {
                 type: "text",
-                URL: "themes/images/textIcon.png"
+                URL: "themes/images/text-icon.png"
             },
             "HTML": {
                 type: "HTML",
-                URL: "themes/images/htmlIcon.png"
+                URL: "themes/images/html-icon.png"
             },
             "video": {
                 type: "video",
-                URL: "themes/images/videoIcon.png"
+                URL: "themes/images/video-icon.png"
             },
             "flickr": {
                 type: "flickr",
-                URL: "themes/images/flickrIcon.png"
+                URL: "themes/images/flickr-icon.png"
             }
-        }
+        },
+
+        // Set device resolution for visual cues
+        DeviceResolution: [{
+            devicename: "I-Pad",
+            width: 1024,
+            height: 768
+        }, {
+            devicename: "I-Pad3",
+            width: 2048,
+            height: 1536
+        }, {
+            devicename: "Samsung tab",
+            width: 1280,
+            height: 800
+        }]
+
     };
 
 });

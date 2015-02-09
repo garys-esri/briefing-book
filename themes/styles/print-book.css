@@ -1,0 +1,42 @@
+﻿
+/*-------------styles for modules of print preview page------------*/ 
+.esriMapBookTitle {
+    color: #fff;
+}
+
+.esriMapBookPageListItem {
+    display: block;
+    overflow-y: visible;
+    height: auto;
+}
+
+.esriMapBookUList {
+    margin-left: 0px !important;
+    height: auto !important;
+}
+
+.esriPageHeaderDiv {
+    height: 50px;
+    width: 100%;
+    display: block;
+}
+
+.esriMapBookPage {
+    height: auto !important;
+    width: 100% !important;
+    overflow: visible !important;
+}
+
+.esriMapBookTitle {
+    display: block;
+}
+
+.esriImageModule {
+    width: 100% !important;
+    height: 100% !important;
+    page-break-after:always;
+}
+
+.esriAutoWidth {
+    width: 100% !important;
+}
