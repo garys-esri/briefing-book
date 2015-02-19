@@ -42,19 +42,10 @@ define([], function () {
         BriefingBookCoverIcon: "themes/images/map-book-bg-grey.png",
 
         // Set search level for books
-        DisplayBook: "all", //organization, all, group
+        DisplayBook: "organization", //organization, all, group
 
         // Set group id if 'DisplayBook' is set to 'group'
-        DisplayGroup: "918908e2f84c4dc8a0ab0beb2849ea6c", // "0aec46fd1c264403b28469dac01ecd2c", //"f31c2a1296d84ea892bb557a796e5ebd",
-
-        // Video URL for YouTube
-        YouTubeVideoUrl: "https://www.youtube.com/embed/",
-
-        // Video URL for Esri
-        EsriVideoUrl: "https://video.esri.com/iframe/",
-
-        // Video URL for Vimeo
-        VimeoVideoUrl: "https://player.vimeo.com/video/",
+        DisplayGroup: "", // "918908e2f84c4dc8a0ab0beb2849ea6c", "0aec46fd1c264403b28469dac01ecd2c", //"f31c2a1296d84ea892bb557a796e5ebd",
 
         // The URL for your ArcGIS Online Organization or Portal for ArcGIS site,
         // e.g., something like "https://myOrg.maps.arcgis.com" for an Online Organization
@@ -63,20 +54,20 @@ define([], function () {
         // OAuth application id; This parameter is only required for ArcGIS organizational accounts using Enterprise Logins.Leave empty if you are not using Enterprise Logins
         OAuthAppid: "", // e.g., something like "AFTKRmv16wj14N3z"
 
-        // Location of your proxy file
-        ProxyURL: "/proxy/proxy.ashx",
-
         // The unique tag given to each book. This tag will determine which books are visible in the Briefing Book application.
         ConfigSearchTag: "",
 
         // cookie/local storage name  for storing user credential
         Credential: "esribriefingbookcredential",
 
+        // Location of your proxy file
+        ProxyURL: "/proxy/proxy.ashx",
+        
         // max webmap count
         MaxWebMapCount: 100,
 
         // display no of webmap thumbnail in' Select webmap' dialog
-        WebmapPerPage: 10,
+        WebmapPerPage: 12,
 
         //set path for default webmap thumbnail
         DefaultWebmapThumbnail: "themes/images/not-available.png",
@@ -87,6 +78,15 @@ define([], function () {
         // sorting order
         SortOrder: 'asc', // Values: asc | desc
 
+        // Video URL for YouTube
+        YouTubeVideoUrl: "https://www.youtube.com/embed/",
+
+        // Video URL for Esri
+        EsriVideoUrl: "https://video.esri.com/iframe/",
+
+        // Video URL for Vimeo
+        VimeoVideoUrl: "https://player.vimeo.com/video/",
+        
         /* module Defaults contains default settings for each and every module */
         /* cover page layout contains layout for index page*/
         CoverPageLayout: {
