@@ -31,8 +31,8 @@ define([], function () {
         // Set application home screen path
         AppHomeScreenIcon: "themes/images/home-icon-grey.ico",
 
-        // Authoring Mode not supported in this release.
-        // Set application mode. Set to false for Public interface. Set to true for Admin interface
+        // Set application mode to true to allow users to View, Create and Edit books.
+        // Set application mode to false to allow users to View public and private books without editing options.
         AuthoringMode: true, // false: Public mode and true: Editable mode
 
         // Set theme for application
