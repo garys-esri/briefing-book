@@ -1,4 +1,4 @@
-﻿/*global define,dojo,dijit,OAuthHelper*/
+﻿/*global define,dojo,dijit,OAuthHelper,appGlobals*/
 /*jslint browser:true,sloppy:true,nomen:true,unparam:true,plusplus:true,indent:4 */
 /*
  | Copyright 2014 Esri
@@ -30,6 +30,7 @@ define([
     "dojo/string",
     "dojo/dnd/Source",
     "dojo/text!./templates/mapbook-collection.html",
+    "dojo/window",
     "dijit/_WidgetBase",
     "dijit/_TemplatedMixin",
     "dijit/_WidgetsInTemplateMixin",
@@ -41,7 +42,7 @@ define([
     "../mapbook-collection/page-navigation",
     "../mapbook-collection/module-renderer",
     "../mapbook-collection/page-renderer"
-], function (declare, lang, array, domConstruct, domAttr, domStyle, domClass, dom, on, topic, query, dojoString, DndSource, template, _WidgetBase, _TemplatedMixin, _WidgetsInTemplateMixin, nls, urlUtils, FlickrBadge, FlickrRestStore, mapbookDijits, pageNavigation, moduleRenderer, pageRenderer) {
+], function (declare, lang, array, domConstruct, domAttr, domStyle, domClass, dom, on, topic, query, dojoString, DndSource, template, dojoWindow, _WidgetBase, _TemplatedMixin, _WidgetsInTemplateMixin, nls, urlUtils, FlickrBadge, FlickrRestStore, mapbookDijits, pageNavigation, moduleRenderer, pageRenderer) {
     return declare([_WidgetBase, _TemplatedMixin, _WidgetsInTemplateMixin, mapbookDijits, pageNavigation, moduleRenderer, pageRenderer], {
         templateString: template,
         nls: nls,
@@ -62,7 +63,7 @@ define([
         startup: function () {
             var _self = this, flickrUrl = "https://www.flickr.com/services/rest/";
             // count to detect how many modules are not loaded yet
-            dojo.moduleLoadingCount = 0;
+            appGlobals.moduleLoadingCount = 0;
             //overriding dojo flickr widgets
             lang.extend(FlickrRestStore, {
                 _flickrRestUrl: flickrUrl
@@ -93,7 +94,7 @@ define([
             });
             // update module height on resizing
             topic.subscribe("/dojo/resize/stop", function (resizerObj) {
-                dojo.bookInfo[dojo.currentBookIndex].BookConfigData.UnSaveEditsExists = true;
+                appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.UnSaveEditsExists = true;
                 _self._setNewHeight(resizerObj);
                 //update page height on changing module height.
                 _self._updatePageHeight();
@@ -118,15 +119,16 @@ define([
             //perform operation to add new book,when user clicks on 'add book' icon.
             topic.subscribe("addBookHandler", function (bookIndex) {
                 _self._createMapBookList();
-                dojo.currentBookIndex = bookIndex;
+                appGlobals.currentBookIndex = bookIndex;
                 _self.isEditModeEnable = true;
-                _self._displaySelectedBookContent(dojo.bookInfo[bookIndex]);
+                _self._displaySelectedBookContent(appGlobals.bookInfo[bookIndex]);
             });
             //destroy all maps of the selected book.
             topic.subscribe("destroyWebmapHandler", function () {
                 array.forEach(_self.webmapArray, function (webmap) {
                     webmap.destroy();
                 });
+                _self.webmapArray = [];
             });
             //handler for validating input to create/update modules.
             topic.subscribe("validateInputHandler", function (btnNode, moduleContainer, moduleInputs) {
@@ -165,9 +167,9 @@ define([
                 if (bookId) {
                     isBookExist = false;
                     //check bookId is matched with any of books.
-                    isBookExist = array.some(dojo.bookInfo, lang.hitch(this, function (book, index) {
+                    isBookExist = array.some(appGlobals.bookInfo, lang.hitch(this, function (book, index) {
                         if (book.BookConfigData.itemId === bookId) {
-                            dojo.currentBookIndex = index;
+                            appGlobals.currentBookIndex = index;
                             return true;
                         }
                     }));
@@ -179,8 +181,8 @@ define([
                     }
                     if (isBookExist) {
                         // display book, which is specified in app URL.
-                        this._displaySelectedBookContent(dojo.bookInfo[dojo.currentBookIndex].BookConfigData);
-                    } else if (signedInViaOAuth || dojo.currentUser) {
+                        this._displaySelectedBookContent(appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData);
+                    } else if (signedInViaOAuth || appGlobals.currentUser) {
                         // display alert message, if book is not found for logged in user.
                         this.alertDialog._setContent(nls.errorMessages.permissionDenied, 0);
                     } else {
@@ -201,7 +203,7 @@ define([
             this.mapBookDetails = [];
             domConstruct.empty(dom.byId("mapBookContent"));
 
-            array.forEach(dojo.bookInfo, function (currentBook, bookIndex) {
+            array.forEach(appGlobals.bookInfo, function (currentBook, bookIndex) {
                 //create row in bookshelf.
                 if (count % 25 === 0) {
                     container = domConstruct.create("div", { "class": "esriMapBookListContainer" }, dom.byId("mapBookContent"));
@@ -211,7 +213,7 @@ define([
                 mapBookContainer = domConstruct.create("div", { "class": "esriBookContainer" }, container);
                 currentMapBook = domConstruct.create("div", { "class": "esriMapBookList", "index": bookIndex, "value": currentBook.BookConfigData.title }, mapBookContainer);
                 //set cover page of the book from the config.
-                domStyle.set(currentMapBook, "backgroundImage", 'url(' + dojo.appConfigData.BriefingBookCoverIcon + ')');
+                domStyle.set(currentMapBook, "backgroundImage", 'url(' + appGlobals.appConfigData.BriefingBookCoverIcon + ')');
                 //create delete icon on book.
                 domConstruct.create("div", { "class": "esriBookClose" }, currentMapBook);
                 //create div to display title of the book.
@@ -226,27 +228,27 @@ define([
                 }
                 _self.own(on(currentMapBook, "click", function (evt) {
                     //attach event for delete button on book.
-                    if (domClass.contains(evt.target, "esriBookClose") && dojo.appConfigData.AuthoringMode) {
-                        dojo.currentBookIndex = parseInt(domAttr.get(evt.target.parentElement, "index"), 10);
+                    if (domClass.contains(evt.target, "esriBookClose") && appGlobals.appConfigData.AuthoringMode) {
+                        appGlobals.currentBookIndex = parseInt(domAttr.get(evt.target.parentElement, "index"), 10);
                         _self._deleteSeletedBook(domAttr.get(evt.target.parentElement, "value"));
                     } else {
-                        if (dojo.appConfigData.AuthoringMode) {
+                        if (appGlobals.appConfigData.AuthoringMode) {
                             //do not allow user to open any book if delete button is displayed on book.
                             if (domClass.contains(query('.esriDeleteBookIcon')[0], "esriHeaderIconSelected")) {
                                 return 0;
                             }
                         }
-                        dojo.currentBookIndex = parseInt(domAttr.get(this, "index"), 10);
+                        appGlobals.currentBookIndex = parseInt(domAttr.get(this, "index"), 10);
                         mapbookTitle = domAttr.get(this, "value");
                         //search selected book's JSON data in bookInfo array.
-                        isBookExist = array.some(dojo.bookInfo, function (book, index) {
-                            if (book.BookConfigData.title === mapbookTitle && dojo.currentBookIndex === index) {
+                        isBookExist = array.some(appGlobals.bookInfo, function (book, index) {
+                            if (book.BookConfigData.title === mapbookTitle && appGlobals.currentBookIndex === index) {
                                 return true;
                             }
                         });
                         if (isBookExist) {
                             //display selected book view ,if selected book's data is found in bookInfo array.
-                            _self._displaySelectedBookContent(dojo.bookInfo[dojo.currentBookIndex].BookConfigData);
+                            _self._displaySelectedBookContent(appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData);
                         }
                     }
                 }));
@@ -281,8 +283,8 @@ define([
                 domAttr.set(query(".esriMapBookTitle")[0], "innerHTML", book.title);
                 domStyle.set(query(".esrihomeButtonIcon")[0], "display", "block");
                 domStyle.set(query(".esriTocIcon")[0], "display", "block");
-
-                if (dojo.appConfigData.AuthoringMode) {
+                domStyle.set(query('.esriPrintIcon')[0], "display", "block");
+                if (appGlobals.appConfigData.AuthoringMode) {
                     //display editing option if authoring mode is enabled or user is signed in.
                     this._toggleDeleteBookOption(false);
                     domStyle.set(query(".esriDeleteBookIcon")[0], "display", "none");
@@ -290,14 +292,11 @@ define([
                     domStyle.set(query(".esriRefreshIcon")[0], "display", "none");
                     domStyle.set(query(".esriEditIcon")[0], "display", "block");
                     domStyle.set(query(".esriDeleteIcon")[0], "display", "none");
-                    if (dojo.bookInfo[dojo.currentBookIndex].BookConfigData.owner === dojo.currentUser) {
+                    if (appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.owner === appGlobals.currentUser) {
                         domStyle.set(query(".esriSaveIcon")[0], "display", "block");
                         domStyle.set(query(".esriShareBookIcon")[0], "display", "block");
                     }
                     domStyle.set(query(".esriCopyBookIcon")[0], "display", "block");
-                } else {
-                    //display print icon if user is not signed in.
-                    domStyle.set(query('.esriPrintIcon')[0], "display", "block");
                 }
             }
             //destroy all webmaps.
@@ -305,15 +304,20 @@ define([
                 webmap.destroy();
             });
             this.webmapArray = [];
-            dojo.moduleLoadingCount = 0;
+            //destroy dnd modules
+            if (this.dndModuleContent) {
+                this.dndModuleContent.destroy();
+                this.dndModuleContent = null;
+            }
+            appGlobals.moduleLoadingCount = 0;
             this._displayBookContent(book);
             //set default page index to 0 to display cover page of the book.
             this.currentIndex = 0;
             //handle left/right arrow visibility.
-            if (this.mapBookDetails[dojo.currentBookIndex].length === 1) {
+            if (this.mapBookDetails[appGlobals.currentBookIndex].length === 1) {
                 domClass.add(this.mapBookNextPage, "esriNextDisabled");
             } else {
-                if (this.mapBookDetails[dojo.currentBookIndex].length === 2 && this.mapBookDetails[dojo.currentBookIndex][1] === "EmptyContent") {
+                if (this.mapBookDetails[appGlobals.currentBookIndex].length === 2 && this.mapBookDetails[appGlobals.currentBookIndex][1] === "EmptyContent") {
                     domClass.add(this.mapBookNextPage, "esriNextDisabled");
                 } else {
                     this._removeClass(this.mapBookNextPage, "esriNextDisabled");
@@ -330,7 +334,7 @@ define([
         _enableMapBookEditing: function () {
             var divTitle, mapBookContents, module;
             //do not allow editing of book, if user is not the author of that book.
-            if (this.isEditModeEnable && dojo.bookInfo[dojo.currentBookIndex].BookConfigData.owner !== dojo.currentUser) {
+            if (this.isEditModeEnable && appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.owner !== appGlobals.currentUser) {
                 this.isEditModeEnable = false;
                 domClass.remove(query('.esriEditIcon')[0], "esriHeaderIconSelected");
                 this.alertDialog._setContent(nls.validateBookOwner, 0);
@@ -357,6 +361,8 @@ define([
                         domClass.add(module, "dojoDndHandle");
                     }
                 });
+                //hide print icon if edit mode is enabled.
+                domStyle.set(query('.esriPrintIcon')[0], "display", "none");
                 if (this.currentIndex > 1) {
                     domStyle.set(query(".esriDeleteIcon")[0], "display", "block");
                 }
@@ -413,8 +419,8 @@ define([
             this.alertDialog._setContent(confirmMsg, 1).then(function (confirmDeleteBook) {
                 if (confirmDeleteBook) {
                     //delete book from bookInfo array and reset book gallery, if it book is not saved on AGOL.
-                    if (dojo.bookInfo[dojo.currentBookIndex].BookConfigData.itemId === nls.defaultItemId) {
-                        dojo.bookInfo.splice(dojo.currentBookIndex, 1);
+                    if (appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.itemId === nls.defaultItemId) {
+                        appGlobals.bookInfo.splice(appGlobals.currentBookIndex, 1);
                         _self._createMapBookList();
                     } else {
                         //delete book AGOL.
@@ -423,7 +429,7 @@ define([
                 }
             });
             //hide delete book icon from application header if book Gallery is empty.
-            if (dojo.bookInfo.length === 0) {
+            if (appGlobals.bookInfo.length === 0) {
                 domStyle.set(query('.esriDeleteBookIcon')[0], "display", "none");
             }
         },
@@ -437,7 +443,7 @@ define([
             totalPages = query('#mapBookPagesUList .esriMapBookPageListItem');
             pageWidth = domStyle.get(query("#mapBookContentContainer")[0], "width");
             //calculate page height.
-            bookPageHeight = pageHeight = dojo.window.getBox().h - (domStyle.get(dom.byId("mapBookHeaderContainer"), "height")) - 5;
+            bookPageHeight = pageHeight = dojoWindow.getBox().h - (domStyle.get(dom.byId("mapBookHeaderContainer"), "height")) - 5;
             domStyle.set(dom.byId("mapBookScrollContent"), "height", pageHeight + 'px');
             if (dom.byId('divContentList')) {
                 domStyle.set(dom.byId('divContentList'), "height", pageHeight - domStyle.get(query('.esriContentListHeaderDiv ')[0], "height") - 10 + 'px');
@@ -456,9 +462,9 @@ define([
                 this._setSliderArrows();
             }
             if (totalPages && dom.byId("mapBookPagesUList")) {
-                if (this.mapBookDetails.length > 0 && this.mapBookDetails[dojo.currentBookIndex]) {
+                if (this.mapBookDetails.length > 0 && this.mapBookDetails[appGlobals.currentBookIndex]) {
                     array.forEach(totalPages, function (page, index) {
-                        if (index > 1 || _self.mapBookDetails[dojo.currentBookIndex][index] === "EmptyContent") {
+                        if (index > 1 || _self.mapBookDetails[appGlobals.currentBookIndex][index] === "EmptyContent") {
                             bookPageHeight = pageHeight - domStyle.get(query(".esriFooterDiv")[0], "height");
                         }
                         listcontentPage = query('.esriMapBookPage', page)[0];
@@ -474,12 +480,12 @@ define([
                         }
                     });
 
-                    if (this.currentIndex !== 0 && this.mapBookDetails[dojo.currentBookIndex][1] === "EmptyContent") {
+                    if (this.currentIndex !== 0 && this.mapBookDetails[appGlobals.currentBookIndex][1] === "EmptyContent") {
                         marginleft = (this.currentIndex - 1) * Math.ceil(pageWidth);
                     } else {
                         marginleft = this.currentIndex * Math.ceil(pageWidth);
                     }
-                    //set margin left of the boo page carousal
+                    //set margin left of the boo page carousel
                     dom.byId("mapBookPagesUList").style.marginLeft = -marginleft + 'px';
                     //resize all webmap
                     this._resizeMapModule(true);
@@ -518,20 +524,20 @@ define([
                 if (pageHeader[0]) {
                     columnHeight = 100 + columnHeight;
                 }
-                for (i = 0; i < dojo.appConfigData.DeviceResolution.length; i++) {
-                    if (dojo.appConfigData.DeviceResolution[i].height < columnHeight) {
+                for (i = 0; i < appGlobals.appConfigData.DeviceResolution.length; i++) {
+                    if (appGlobals.appConfigData.DeviceResolution[i].height < columnHeight) {
                         divResolutionMark = domConstruct.create("div", {
                             "class": "esriDeviceResolution",
-                            "style": "top:" + dojo.appConfigData.DeviceResolution[i].height + "px;"
+                            "style": "top:" + appGlobals.appConfigData.DeviceResolution[i].height + "px;"
                         }, listContentPage);
                         //create label to display device name
                         domConstruct.create("div", {
                             "class": "esriLeftText",
-                            "innerHTML": dojo.appConfigData.DeviceResolution[i].devicename + '(' + dojo.appConfigData.DeviceResolution[i].width + '*' + dojo.appConfigData.DeviceResolution[i].height + ')'
+                            "innerHTML": appGlobals.appConfigData.DeviceResolution[i].devicename + '(' + appGlobals.appConfigData.DeviceResolution[i].width + '*' + appGlobals.appConfigData.DeviceResolution[i].height + ')'
                         }, divResolutionMark);
                         domConstruct.create("div", {
                             "class": "esriRightText",
-                            "innerHTML": dojo.appConfigData.DeviceResolution[i].devicename + '(' + dojo.appConfigData.DeviceResolution[i].width + '*' + dojo.appConfigData.DeviceResolution[i].height + ')'
+                            "innerHTML": appGlobals.appConfigData.DeviceResolution[i].devicename + '(' + appGlobals.appConfigData.DeviceResolution[i].width + '*' + appGlobals.appConfigData.DeviceResolution[i].height + ')'
                         }, divResolutionMark);
                     }
                 }
@@ -560,7 +566,7 @@ define([
                 domConstruct.empty(dom.byId("esriMapPages"));
             }
             this.DNDArray = [];
-            if (!this.mapBookDetails[dojo.currentBookIndex]) {
+            if (!this.mapBookDetails[appGlobals.currentBookIndex]) {
                 if (book.hasOwnProperty('CoverPage')) {
                     book.CoverPage.type = "CoverPage";
                     arrPages.push(book.CoverPage);
@@ -577,18 +583,18 @@ define([
                     arrPages.push("EmptyContent");
                 }
                 if (!book.hasOwnProperty('BookPages')) {
-                    dojo.bookInfo[dojo.currentBookIndex].BookConfigData.BookPages = [];
-                    dojo.bookInfo[dojo.currentBookIndex].ModuleConfigData.BookPages = [];
+                    appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.BookPages = [];
+                    appGlobals.bookInfo[appGlobals.currentBookIndex].ModuleConfigData.BookPages = [];
                 }
                 array.forEach(book.BookPages, function (currentPage) {
                     currentPage.type = "BookPages";
                     arrPages.push(currentPage);
                 });
                 //push all book pages in a global array this.mapBookDetails
-                this.mapBookDetails[dojo.currentBookIndex] = arrPages;
+                this.mapBookDetails[appGlobals.currentBookIndex] = arrPages;
             }
             //start rendering of book pages
-            this._renderPages(this.mapBookDetails[dojo.currentBookIndex]);
+            this._renderPages(this.mapBookDetails[appGlobals.currentBookIndex]);
             //render table of content panel
             this._renderTOCContent(dom.byId("divContentList"));
             domStyle.set(dom.byId("outerLoadingIndicator"), "display", "none");
@@ -599,14 +605,14 @@ define([
         * @memberOf widgets/mapbook-collection/mapbook-collection
         */
         _createDnDModuleList: function () {
-            var _self = this, divDndModule, dndModuleContent, dndIocnDiv, divEditPageHeader, dndModuleArray;
+            var _self = this, divDndModule, dndIocnDiv, divEditPageHeader, dndModuleArray;
 
             divEditPageHeader = query('.esriEditPageHeader')[0];
             this._destroyExistingNode(dom.byId("DNDContainer"), false);
             if (divEditPageHeader) {
                 // create drag & drop module list in edit page
                 divDndModule = domConstruct.create("div", { "dndContType": "newDndModule", "id": "DNDContainer", "class": "esriDragAndDropPanel" }, divEditPageHeader);
-                dndModuleContent = new DndSource("DNDContainer", { creator: _self._createAvatar, accept: [] });
+                this.dndModuleContent = new DndSource("DNDContainer", { creator: _self._createAvatar, accept: [] });
                 domConstruct.create("div", { "innerHTML": nls.dndModuleText, "class": "esriDragAndDropTitle" }, divDndModule);
                 dndIocnDiv = domConstruct.create("div", { "class": "esriDragAndDropIcon" }, null);
                 domConstruct.create("span", { "class": "esriDragAndDropWebmapIcon", "type": "webmap", "title": nls.webMapIconTitle }, dndIocnDiv);
@@ -616,21 +622,21 @@ define([
                 domConstruct.create("span", { "class": "esriDragAndDropFlickrIcon", "type": "flickr", "title": nls.flickrIconTitle }, dndIocnDiv);
                 domConstruct.create("span", { "class": "esriDragAndDropImageIcon", "type": "image", "title": nls.imageIconTitle }, dndIocnDiv);
                 dndModuleArray = [];
-                dndModuleContent.copyOnly = true;
+                this.dndModuleContent.copyOnly = true;
                 array.forEach(dndIocnDiv.children, function (node) {
                     dndModuleArray.push({ data: node.outerHTML, type: ["text"] });
                 });
-                dndModuleContent.insertNodes(false, dndModuleArray);
-                dndModuleContent.forInItems(function (item, id, map) {
+                this.dndModuleContent.insertNodes(false, dndModuleArray);
+                this.dndModuleContent.forInItems(function (item, id, map) {
                     domClass.add(id, item.type[0]);
                 });
                 //disable dnd on module.
-                dndModuleContent.checkAcceptance = function () {
+                this.dndModuleContent.checkAcceptance = function () {
                     return false;
                 };
                 //update module position when dnd is performed.
-                on(dndModuleContent, "DndDrop", function (srcContainer, nodes, copy, targetContainer) {
-                    dojo.bookInfo[dojo.currentBookIndex].BookConfigData.UnSaveEditsExists = true;
+                on(this.dndModuleContent, "DndDrop", function (srcContainer, nodes, copy, targetContainer) {
+                    appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.UnSaveEditsExists = true;
                     var srcContType = domAttr.get(srcContainer.node, "dndContType");
                     if (srcContType === "newDndModule") {
                         //if new module is dragged into page columns.
@@ -638,15 +644,15 @@ define([
                     } else {
                         targetContainer.sync();
                         srcContainer.sync();
-                        if (srcContType === "pageCarousal") {
-                            //if dnd is performed in page carousal.
+                        if (srcContType === "pageCarousel") {
+                            //if dnd is performed in page carousel.
                             setTimeout(function () {
                                 _self._reArrangePageSequence(nodes, targetContainer);
                             }, 0);
                         } else {
                             //if dnd is performed on page modules.
                             setTimeout(function () {
-                                _self._saveModuleSequence(srcContainer, targetContainer);
+                                _self._saveModuleSequence(nodes[0], srcContainer, targetContainer);
                             }, 0);
                         }
                     }
@@ -678,7 +684,7 @@ define([
                         currentPageIndex = parseInt(domAttr.get(targetNodes[index - 1], "index"), 10);
                         this._appendPageAtLast(currentPageIndex + 1);
                     } else {
-                        //get updated index of dragged item in page carousal and insert current page at the same index in book.
+                        //get updated index of dragged item in page carousel and insert current page at the same index in book.
                         currentPageIndex = parseInt(domAttr.get(targetNodes[index + 1], "index"), 10);
                         this._changePageSequence(currentPageIndex);
                         if (currentPageIndex === 2) {
@@ -691,7 +697,7 @@ define([
             if (flag) {
                 return;
             }
-            //rerender page carousal
+            //rerender page carousel
             this._createPageSlider();
             this._updateTOC();
             this._gotoPage(this.currentIndex);
@@ -705,18 +711,18 @@ define([
         _changePageSequence: function (currentPageIndex) {
             var selectedPage, bookPages, mapBookDetails, bookListdata, mapbookdata, bookdata, moduleData,
                 currentListItemIndex = this.currentIndex, refListItemIndex = currentPageIndex;
-            if (this.mapBookDetails[dojo.currentBookIndex][1] === "EmptyContent") {
+            if (this.mapBookDetails[appGlobals.currentBookIndex][1] === "EmptyContent") {
                 currentListItemIndex--;
                 refListItemIndex--;
             }
             selectedPage = dom.byId('mapBookPagesUList').children[currentListItemIndex];
             dom.byId('mapBookPagesUList').insertBefore(selectedPage, dom.byId('mapBookPagesUList').children[refListItemIndex]);
 
-            bookPages = dojo.bookInfo[dojo.currentBookIndex].ModuleConfigData.BookPages;
-            bookListdata = dojo.bookInfo[dojo.currentBookIndex].BookConfigData.BookPages;
-            mapBookDetails = this.mapBookDetails[dojo.currentBookIndex];
-            mapbookdata = this.mapBookDetails[dojo.currentBookIndex][this.currentIndex];
-            bookdata = dojo.bookInfo[dojo.currentBookIndex].BookConfigData.BookPages[this.currentIndex - 2];
+            bookPages = appGlobals.bookInfo[appGlobals.currentBookIndex].ModuleConfigData.BookPages;
+            bookListdata = appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.BookPages;
+            mapBookDetails = this.mapBookDetails[appGlobals.currentBookIndex];
+            mapbookdata = this.mapBookDetails[appGlobals.currentBookIndex][this.currentIndex];
+            bookdata = appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.BookPages[this.currentIndex - 2];
             moduleData = bookPages[this.currentIndex - 2];
             mapBookDetails.splice(currentPageIndex, 0, mapbookdata);
             bookPages.splice(currentPageIndex - 2, 0, moduleData);
@@ -743,15 +749,15 @@ define([
         */
         _appendPageAtLast: function (currentPageIndex) {
             var currentListItemIndex = this.currentIndex, selectedPage, bookPages, mapBookDetails, bookListdata;
-            if (this.mapBookDetails[dojo.currentBookIndex][1] === "EmptyContent") {
+            if (this.mapBookDetails[appGlobals.currentBookIndex][1] === "EmptyContent") {
                 currentListItemIndex--;
             }
             selectedPage = dom.byId('mapBookPagesUList').children[currentListItemIndex];
             dom.byId('mapBookPagesUList').appendChild(selectedPage);
 
-            bookPages = dojo.bookInfo[dojo.currentBookIndex].ModuleConfigData.BookPages;
-            bookListdata = dojo.bookInfo[dojo.currentBookIndex].BookConfigData.BookPages;
-            mapBookDetails = this.mapBookDetails[dojo.currentBookIndex];
+            bookPages = appGlobals.bookInfo[appGlobals.currentBookIndex].ModuleConfigData.BookPages;
+            bookListdata = appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.BookPages;
+            mapBookDetails = this.mapBookDetails[appGlobals.currentBookIndex];
             //update content data in arrays
             mapBookDetails.splice(currentPageIndex + 1, 0, mapBookDetails[this.currentIndex]);
             bookPages.splice(currentPageIndex - 1, 0, bookPages[this.currentIndex - 2]);
@@ -770,11 +776,11 @@ define([
         * @param {object} targetContainer is dnd target container for selected dnd node
         * @memberOf widgets/mapbook-collection/mapbook-collection
         */
-        _saveModuleSequence: function (srcContainer, targetContainer) {
+        _saveModuleSequence: function (node, srcContainer, targetContainer) {
             var moduleKey, bookData, targetColIndex, srcColIndex, targetNodes, sourceNodes, firstChild, nodeIndex, listItemIndex, selectedPage;
             targetColIndex = parseInt(domAttr.get(targetContainer.node, "columnIndex"), 10);
             targetNodes = targetContainer.getAllNodes();
-            bookData = this._getConfigData(dojo.bookInfo[dojo.currentBookIndex].BookConfigData);
+            bookData = this._getConfigData(appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData);
             bookData.content[targetColIndex] = [];
             if (srcContainer) {
                 //get nodes of container, from where node is dragged.
@@ -803,12 +809,15 @@ define([
                     bookData.content[srcColIndex].push(moduleKey);
                 }
             }
-            if (this.currentIndex > 0 && this.mapBookDetails[dojo.currentBookIndex][1] === "EmptyContent") {
+            if (this.currentIndex > 0 && this.mapBookDetails[appGlobals.currentBookIndex][1] === "EmptyContent") {
                 listItemIndex = this.currentIndex - 1;
+            }
+            if (domAttr.get(node, "type") === "image") {
+                this._setImageDimensions(query('.esriImageModule', node)[0], false);
             }
             selectedPage = targetContainer.node.parentElement;
             this._setColumnHeight(selectedPage);
-            this.mapBookDetails[dojo.currentBookIndex][this.currentIndex].content = bookData.content;
+            this.mapBookDetails[appGlobals.currentBookIndex][this.currentIndex].content = bookData.content;
         },
 
         /**
@@ -840,11 +849,11 @@ define([
                 pageLayoutClass, moduleIndex, arrContent = {}, dndCont, dndContentArray, pageTitleClass = "esriMapBookPageTitle esriMapBookColContent";
             if (!this.isEditModeEnable) {
                 //get page content data from book JSON.
-                mapBookPageContent = this._getConfigData(dojo.bookInfo[dojo.currentBookIndex].ModuleConfigData);
+                mapBookPageContent = this._getConfigData(appGlobals.bookInfo[appGlobals.currentBookIndex].ModuleConfigData);
             } else {
                 newBookPage = {};
                 //get default module properties for creating new module.
-                mapBookPageContent = lang.clone(dojo.appConfigData.ModuleDefaultsConfig);
+                mapBookPageContent = lang.clone(appGlobals.appConfigData.ModuleDefaultsConfig);
                 pageTitleClass += " esriEditableModeContent";
                 newBookPage = lang.clone(page);
                 if (page.title) {
@@ -881,7 +890,7 @@ define([
                     //render content for each column of the page
                     if (currentModuleContent && currentModuleContent.length > 0) {
                         //generate a unique attribute 'moduleIndex' key for columns
-                        moduleIndex = contentIndex.toString() + columnIndex.toString() + page.index.toString() + dojo.currentBookIndex.toString();
+                        moduleIndex = contentIndex.toString() + columnIndex.toString() + page.index.toString() + appGlobals.currentBookIndex.toString();
                         pageContentContainer = domConstruct.create("div", { "dndType": "mapbookPageModule" }, null);
                         pageContentHolder = domConstruct.create("div", { "class": pageLayoutClass }, pageContentContainer);
                         _self._setModuleIndex(pageContentHolder, moduleIndex, columnIndex, contentIndex);
@@ -892,7 +901,7 @@ define([
                         dndContentArray.push(pageContentContainer);
                     }
                 });
-                //set page carousal width when dnd gets started.
+                //set page carousel width when dnd gets started.
                 on(dndCont, "DndStart", lang.hitch(_self, _self._setSliderWidth));
                 //place dnd nodes in page domNode
                 dndCont.insertNodes(false, dndContentArray);
@@ -909,14 +918,14 @@ define([
                 _self._createDnDModuleList();
                 if (page.type === "BookPages") {
                     //save page information of newly created book page in arrays.
-                    dojo.bookInfo[dojo.currentBookIndex].BookConfigData[page.type].push(newBookPage);
-                    dojo.bookInfo[dojo.currentBookIndex].ModuleConfigData.BookPages.push(arrContent);
-                    _self.mapBookDetails[dojo.currentBookIndex].push(newBookPage);
+                    appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData[page.type].push(newBookPage);
+                    appGlobals.bookInfo[appGlobals.currentBookIndex].ModuleConfigData.BookPages.push(arrContent);
+                    _self.mapBookDetails[appGlobals.currentBookIndex].push(newBookPage);
                 } else {
                     //save page information of newly created cover/content page in arrays.
-                    dojo.bookInfo[dojo.currentBookIndex].BookConfigData[page.type] = newBookPage;
-                    dojo.bookInfo[dojo.currentBookIndex].ModuleConfigData[page.type] = arrContent;
-                    _self.mapBookDetails[dojo.currentBookIndex][_self.currentIndex] = newBookPage;
+                    appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData[page.type] = newBookPage;
+                    appGlobals.bookInfo[appGlobals.currentBookIndex].ModuleConfigData[page.type] = arrContent;
+                    _self.mapBookDetails[appGlobals.currentBookIndex][_self.currentIndex] = newBookPage;
                 }
                 //delete default height for module from book json.
                 delete newBookPage.height;
@@ -933,7 +942,7 @@ define([
         */
         _createColumnContent: function (currentModuleContent, pageContentHolder, newBookPage, arrContent) {
             var mapBookPageContent, pageModule, moduleIndex, pageContentModule, _self = this;
-            mapBookPageContent = this._getConfigData(dojo.bookInfo[dojo.currentBookIndex].ModuleConfigData);
+            mapBookPageContent = this._getConfigData(appGlobals.bookInfo[appGlobals.currentBookIndex].ModuleConfigData);
             moduleIndex = domAttr.get(pageContentHolder, "moduleIndex");
             //create parent container for module
             pageModule = domConstruct.create("div", { "class": "esriDivPageModule" }, pageContentHolder);
@@ -973,9 +982,9 @@ define([
             var label, dialogTitle, labelValue, moduleIconPath, moduleInfo, moduleData, divModuleSetting, inputContainer, key, _self = this,
                 moduleSettingContent, isValidationRequired, btns, btnSave, moduleAttr = {}, moduleInputs = [], loadingIcon;
 
-            moduleInfo = lang.clone(dojo.appConfigData.ModuleDefaultsConfig);
+            moduleInfo = lang.clone(appGlobals.appConfigData.ModuleDefaultsConfig);
             //set module icon as header icon for setting dialog.
-            moduleIconPath = dojo.appConfigData.DefaultModuleIcons[moduleType].URL;
+            moduleIconPath = appGlobals.appConfigData.DefaultModuleIcons[moduleType].URL;
             dialogTitle = '<img class="esriSettingModuleIcon" src=' + moduleIconPath + '>' + dojoString.substitute(nls.settingDialogTitle, { modType: nls[moduleType + 'DialogTitle'] });
 
             if (!isNewModule) {
@@ -987,7 +996,7 @@ define([
                     }
                 }
                 //get module attributes from book JSON.
-                moduleData = this._getConfigData(dojo.bookInfo[dojo.currentBookIndex].ModuleConfigData);
+                moduleData = this._getConfigData(appGlobals.bookInfo[appGlobals.currentBookIndex].ModuleConfigData);
                 moduleAttr = moduleData[moduleKey];
                 if (!moduleAttr) {
                     return 0;
@@ -1051,7 +1060,7 @@ define([
                 btns = domConstruct.create("div", { "class": "esriButtonContainer" }, divModuleSetting);
                 btnSave = domConstruct.create("div", { "moduleKey": moduleKey, "class": "esriSettingSave", "type": isNewModule, "innerHTML": nls.saveButtonText }, btns);
                 on(btnSave, "click", function () {
-                    dojo.bookInfo[dojo.currentBookIndex].BookConfigData.UnSaveEditsExists = true;
+                    appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.UnSaveEditsExists = true;
                     _self._validateInputFields(this, moduleContainer, moduleType, moduleInputs);
                 });
             }
@@ -1104,7 +1113,7 @@ define([
                     } else {
                         inputData = moduleInputs[inputIndex].value;
                     }
-                    inputData = dojo.isString(inputData) ? lang.trim(inputData) : inputData;
+                    inputData = lang.isString(inputData) ? lang.trim(inputData) : inputData;
                     if (inputData === "") {
                         //display error message if any required input field is empty.
                         this.alertDialog._setContent(nls.fieldIsEmpty, 0);

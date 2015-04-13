@@ -1,4 +1,4 @@
-﻿/*global require,dojo,dojoConfig */
+﻿/*global require,dojo,dojoConfig,appGlobals:true */
 /*jslint browser:true,sloppy:true,nomen:true,unparam:true,plusplus:true,indent:4 */
 /*
  | Copyright 2013 Esri
@@ -55,22 +55,21 @@ require([
         if (appLocation !== -1) {
             // hosted or portal
             instance = location.pathname.substr(0, appLocation); //get the portal instance name
-            dojo.appConfigData.PortalURL = location.protocol + "//" + location.host + instance;
-            dojo.appConfigData.ProxyURL = location.protocol + "//" + location.host + instance + "/sharing/proxy";
+            appGlobals.appConfigData.PortalURL = location.protocol + "//" + location.host + instance;
+            appGlobals.appConfigData.ProxyURL = location.protocol + "//" + location.host + instance + "/sharing/proxy";
         } else {
             // setup OAuth if oauth appid exists. If we don't call it here before querying for appid
             // the identity manager dialog will appear if the appid isn't publicly shared.
-            if (dojo.appConfigData.OAuthAppid) {
-                _setupOAuth(dojo.appConfigData.OAuthAppid, dojo.appConfigData.PortalURL);
+            if (appGlobals.appConfigData.OAuthAppid) {
+                _setupOAuth(appGlobals.appConfigData.OAuthAppid, appGlobals.appConfigData.PortalURL);
             }
         }
-        arcgisUtils.arcgisUrl = dojo.appConfigData.PortalURL + "/sharing/rest/content/items";
+        arcgisUtils.arcgisUrl = appGlobals.appConfigData.PortalURL + "/sharing/rest/content/items";
         // Define the proxy url for the app
-        if (dojo.appConfigData.ProxyURL) {
-            esriConfig.defaults.io.proxyUrl = dojoConfig.baseURL + dojo.appConfigData.ProxyURL;
+        if (appGlobals.appConfigData.ProxyURL) {
+            esriConfig.defaults.io.proxyUrl = dojoConfig.baseURL + appGlobals.appConfigData.ProxyURL;
             esriConfig.defaults.io.alwaysUseProxy = false;
         }
-
     }
 
     try {
@@ -79,11 +78,21 @@ require([
         * load application configuration settings from configuration file
         * create an object of widget loader class
         */
-        dojo.appConfigData = config;
-        dojo.bookInfo = [];
+        //create global var to store application data
+        appGlobals = {};
+        //to store configuration setting.
+        appGlobals.appConfigData = config;
+        //to store all books.
+        appGlobals.bookInfo = [];
+        //to store index of selected book.
+        appGlobals.currentBookIndex = null;
+        //to store name of logged in user.
+        appGlobals.currentUser = null;
+        //to store count of unloaded module.
+        appGlobals.moduleLoadingCount = null;
         _initializeApplication();
         esriConfig.defaults.io.corsDetection = true;
-        esriConfig.defaults.io.corsEnabledServers.push(dojo.appConfigData.PortalURL);
+        esriConfig.defaults.io.corsEnabledServers.push(appGlobals.appConfigData.PortalURL);
         esriConfig.defaults.io.timeout = 600000;
         //initialize widget-loader.
         var applicationWidgetLoader = new WidgetLoader();

@@ -1,4 +1,4 @@
-﻿/*global define,dojo, esriConfig*/
+﻿/*global define,dojo,esriConfig,appGlobals*/
 /*jslint browser:true,sloppy:true,nomen:true,unparam:true,plusplus:true,indent:4 */
 /*
  | Copyright 2014 Esri
@@ -24,6 +24,7 @@ define([
     "dojo/dom-style",
     "dojo/dom-class",
     "dojo/dom",
+    "dojo/on",
     "dojo/topic",
     "dojo/i18n!nls/localized-strings",
     "esri/arcgis/Portal",
@@ -36,7 +37,7 @@ define([
     "coreLibrary/oauth-helper",
     "dojo/promise/all",
     "dojo/_base/Deferred"
-], function (declare, array, lang, _WidgetBase, domAttr, domStyle, domClass, dom, topic, nls, esriPortal, arcgisUtils, cookie, GeometryService, kernel, esriRequest, IdentityManager, OAuthHelper, promiseAll, Deferred) {
+], function (declare, array, lang, _WidgetBase, domAttr, domStyle, domClass, dom, on, topic, nls, esriPortal, arcgisUtils, cookie, GeometryService, kernel, esriRequest, IdentityManager, OAuthHelper, promiseAll, Deferred) {
     return declare([_WidgetBase], {
         _portal: null,
         /**
@@ -46,9 +47,9 @@ define([
         * @name widgets/mapbook-config-loader/mapBookConfigLoader
         */
         startup: function () {
-            var deferred = new Deferred();
-            this.defaultAuthoringMode = dojo.appConfigData.AuthoringMode;
-            dojo.appConfigData.AuthoringMode = false;
+            var defer, deferred = new Deferred();
+            this.defaultAuthoringMode = appGlobals.appConfigData.AuthoringMode;
+            appGlobals.appConfigData.AuthoringMode = false;
             this._setApplicationTheme();
 
             topic.subscribe("createPortal", lang.hitch(this, this._createPortal));
@@ -70,9 +71,12 @@ define([
                     domStyle.set(dom.byId("outerLoadingIndicator"), "display", "block");
                     this._portal.signOut().then(lang.hitch(this, function () {
                         this._removeCredentials();
-                        this._queryOrgItems();
-                        domClass.remove(dom.byId("userLogIn"), "esriLogOutIcon");
-                        domAttr.set(dom.byId("userLogIn"), "title", nls.signInText);
+                        defer = new Deferred();
+                        this._createPortal(defer);
+                        defer.then(function () {
+                            domClass.remove(dom.byId("userLogIn"), "esriLogOutIcon");
+                            domAttr.set(dom.byId("userLogIn"), "title", nls.signInText);
+                        });
                     }));
                 }
             }));
@@ -86,9 +90,9 @@ define([
         */
         _createPortal: function (deferred) {
             //initialize portal
-            if (dojo.appConfigData.PortalURL) {
-                this._portal = new esriPortal.Portal(dojo.appConfigData.PortalURL);
-                dojo.connect(this._portal, 'onLoad', lang.hitch(this, function () {
+            if (appGlobals.appConfigData.PortalURL) {
+                this._portal = new esriPortal.Portal(appGlobals.appConfigData.PortalURL);
+                on(this._portal, 'load', lang.hitch(this, function () {
                     if (deferred) {
                         //fetch geometry service URL from portal object.
                         this._setGeometryServiceUrl();
@@ -130,26 +134,26 @@ define([
                     domStyle.set(dom.byId("outerLoadingIndicator"), "display", "block");
                 }
                 //empty book list global array
-                dojo.bookInfo = [];
+                appGlobals.bookInfo = [];
                 queryParams = _self._setQueryParams();
                 if (loggedInUser) {
                     _self._storeCredentials();
                     //set authoring mode true for user
                     if (_self.defaultAuthoringMode) {
-                        dojo.appConfigData.AuthoringMode = true;
+                        appGlobals.appConfigData.AuthoringMode = true;
                     }
                     //toggle sign in icon image on application header
                     if (dom.byId("userLogIn")) {
                         domClass.add(dom.byId("userLogIn"), "esriLogOutIcon");
                         domAttr.set(dom.byId("userLogIn"), "title", nls.signOutText);
-                        dojo.currentUser = loggedInUser.username;
+                        appGlobals.currentUser = loggedInUser.username;
                     }
                 } else {
-                    dojo.appConfigData.AuthoringMode = false;
+                    appGlobals.appConfigData.AuthoringMode = false;
                 }
                 //search accessible book item for logged in user
                 _self._portal.queryItems(queryParams).then(function (response) {
-                    dojo.bookInfo = [];
+                    appGlobals.bookInfo = [];
                     topic.publish("destroyWebmapHandler");
                     topic.publish("_getPortal", _self._portal);
                     _self._getBookItemData(response);
@@ -171,7 +175,7 @@ define([
         _destroyCredentials: function () {
             var i;
             for (i = 0; i < IdentityManager.credentials.length; i++) {
-                if (dojo.appConfigData.PortalURL === IdentityManager.credentials[i].server) {
+                if (appGlobals.appConfigData.PortalURL === IdentityManager.credentials[i].server) {
                     IdentityManager.credentials[i].destroy();
                 }
             }
@@ -200,16 +204,16 @@ define([
                 // Otherwise see if we've cached credentials
             } else {
                 if (this._supports_local_storage()) {
-                    idJson = window.localStorage.getItem(dojo.appConfigData.Credential);
+                    idJson = window.localStorage.getItem(appGlobals.appConfigData.Credential);
                 } else {
                     if (cookie.isSupported()) {
-                        idJson = cookie(dojo.appConfigData.Credential);
+                        idJson = cookie(appGlobals.appConfigData.Credential);
                     }
                 }
                 if (idJson && idJson !== "null" && idJson.length > 4) {
                     idObject = JSON.parse(idJson);
                     for (i = 0; i < idObject.credentials.length; i++) {
-                        if (dojo.appConfigData.PortalURL === idObject.credentials[i].server) {
+                        if (appGlobals.appConfigData.PortalURL === idObject.credentials[i].server) {
                             //load credential from local storage if it is not expired else ignore
                             if (idObject.credentials[i].expires > new Date().getTime()) {
                                 isCredAvailable = true;
@@ -245,10 +249,10 @@ define([
         */
         _removeCredentials: function () {
             if (this._supports_local_storage()) {
-                window.localStorage.setItem(dojo.appConfigData.Credential, null, { expire: -1 });
+                window.localStorage.setItem(appGlobals.appConfigData.Credential, null, { expire: -1 });
             } else {
                 if (cookie.isSupported()) {
-                    dojo.cookie(dojo.appConfigData.Credential, null, { expire: -1 });
+                    appGlobals.cookie(appGlobals.appConfigData.Credential, null, { expire: -1 });
                 }
             }
         },
@@ -263,10 +267,10 @@ define([
             }
             var idString = JSON.stringify(kernel.id.toJson());
             if (this._supports_local_storage()) {
-                window.localStorage.setItem(dojo.appConfigData.Credential, idString, { expires: 1 });
+                window.localStorage.setItem(appGlobals.appConfigData.Credential, idString, { expires: 1 });
             } else {
                 if (cookie.isSupported()) {
-                    cookie(dojo.appConfigData.Credential, idString, { expires: 1 });
+                    cookie(appGlobals.appConfigData.Credential, idString, { expires: 1 });
                 }
             }
         },
@@ -297,20 +301,22 @@ define([
                             }
                             defer.resolve(itemInfo.itemData);
                         } else {
-                            defer.reject();
+                            defer.resolve();
                         }
+                    }, function () {
+                        defer.resolve();
                     });
                 } catch (ex) {
-                    defer.reject();
+                    defer.resolve();
                 }
             });
 
             //push all book data in bookInfo array.
             promiseAll(deferArray).then(function (results) {
-                dojo.bookInfo = [];
+                appGlobals.bookInfo = [];
                 for (bookIndex = 0; bookIndex < results.length; bookIndex++) {
                     if (results[bookIndex]) {
-                        dojo.bookInfo.push(results[bookIndex]);
+                        appGlobals.bookInfo.push(results[bookIndex]);
                     }
                 }
                 //display book in author/public mode.
@@ -324,13 +330,13 @@ define([
         */
         _queryOrgItems: function () {
             var _self = this, queryParams;
-            dojo.appConfigData.AuthoringMode = false;
+            appGlobals.appConfigData.AuthoringMode = false;
             //get parameters to search books.
             queryParams = _self._setQueryParams();
             //search public book item on portal
             if (queryParams) {
                 _self._portal.queryItems(queryParams).then(function (response) {
-                    dojo.bookInfo = [];
+                    appGlobals.bookInfo = [];
                     _self._getBookItemData(response);
                 }, function () {
                     _self.alertDialog._setContent(nls.errorMessages.contentQueryError, 0);
@@ -345,13 +351,13 @@ define([
         */
         _setQueryParams: function () {
             var queryString = '', queryParams, isSignInRequired;
-            if (dojo.appConfigData.DisplayBook && lang.trim(dojo.appConfigData.DisplayBook) !== "") {
-                dojo.appConfigData.DisplayBook = dojo.appConfigData.DisplayBook.toLowerCase();
-                switch (dojo.appConfigData.DisplayBook) {
+            if (appGlobals.appConfigData.DisplayBook && lang.trim(appGlobals.appConfigData.DisplayBook) !== "") {
+                appGlobals.appConfigData.DisplayBook = appGlobals.appConfigData.DisplayBook.toLowerCase();
+                switch (appGlobals.appConfigData.DisplayBook) {
                 case "group":
                     //add group id in query string if 'displayGroup' is set to 'group' in config.
-                    if (lang.trim(dojo.appConfigData.DisplayGroup) !== "") {
-                        queryString = "group:" + dojo.appConfigData.DisplayGroup + " AND ";
+                    if (lang.trim(appGlobals.appConfigData.DisplayGroup) !== "") {
+                        queryString = "group:" + appGlobals.appConfigData.DisplayGroup + " AND ";
                     } else {
                         this.alertDialog._setContent(nls.errorMessages.groupIdNotConfigured, 0);
                         return;
@@ -368,17 +374,17 @@ define([
                     break;
                 }
                 if (isSignInRequired) {
-                    dojo.bookInfo = [];
+                    appGlobals.bookInfo = [];
                     //display sign in dialog.
                     topic.publish("authoringModeHandler");
                     this._displayLoginDialog();
                 } else {
                     //set query parameters.
-                    queryString += "typekeywords:JavaScript AND type:Web Mapping Application AND tags:" + dojo.appConfigData.ConfigSearchTag;
+                    queryString += "typekeywords:JavaScript AND type:Web Mapping Application AND tags:" + appGlobals.appConfigData.ConfigSearchTag;
                     queryParams = {
                         q: queryString,
-                        sortField: dojo.appConfigData.SortField,
-                        sortOrder: dojo.appConfigData.SortOrder,
+                        sortField: appGlobals.appConfigData.SortField,
+                        sortOrder: appGlobals.appConfigData.SortOrder,
                         num: 100
                     };
                 }
@@ -396,8 +402,8 @@ define([
         _saveSelectedBook: function () {
             var configObj, queryParam, currentItemId, requestUrl, requestType;
             domStyle.set(dom.byId("outerLoadingIndicator"), "display", "block");
-            dojo.bookInfo[dojo.currentBookIndex].BookConfigData.UnSaveEditsExists = false;
-            configObj = JSON.stringify(dojo.bookInfo[dojo.currentBookIndex]);
+            appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.UnSaveEditsExists = false;
+            configObj = JSON.stringify(appGlobals.bookInfo[appGlobals.currentBookIndex]);
             queryParam = {
                 itemType: "text",
                 f: 'json',
@@ -406,19 +412,19 @@ define([
                 url: ''
             };
             requestUrl = this._portal.getPortalUser().userContentUrl;
-            currentItemId = dojo.bookInfo[dojo.currentBookIndex].BookConfigData.itemId;
+            currentItemId = appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.itemId;
             if (currentItemId === nls.defaultItemId) {
                 // set required parameter for adding book item on AGOL
                 requestUrl += '/addItem';
                 queryParam.type = 'Web Mapping Application';
                 queryParam.typeKeywords = 'JavaScript,Configurable';
-                queryParam.title = dojo.bookInfo[dojo.currentBookIndex].BookConfigData.title;
-                queryParam.tags = dojo.appConfigData.ConfigSearchTag;
+                queryParam.title = appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.title;
+                queryParam.tags = appGlobals.appConfigData.ConfigSearchTag;
                 requestType = "add";
             } else {
                 // set folder id to save book to its current folder
-                if (dojo.bookInfo[dojo.currentBookIndex].folderId) {
-                    requestUrl += '/' + dojo.bookInfo[dojo.currentBookIndex].folderId;
+                if (appGlobals.bookInfo[appGlobals.currentBookIndex].folderId) {
+                    requestUrl += '/' + appGlobals.bookInfo[appGlobals.currentBookIndex].folderId;
                 }
                 requestUrl += '/items/' + currentItemId + '/update';
                 requestType = "update";
@@ -438,11 +444,11 @@ define([
                 f: 'json',
                 overwrite: true
             };
-            currentItemId = dojo.bookInfo[dojo.currentBookIndex].BookConfigData.itemId;
+            currentItemId = appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.itemId;
             requestUrl = this._portal.getPortalUser().userContentUrl;
             // set folder id to delete book from its current folder
-            if (dojo.bookInfo[dojo.currentBookIndex].folderId) {
-                requestUrl += '/' + dojo.bookInfo[dojo.currentBookIndex].folderId;
+            if (appGlobals.bookInfo[appGlobals.currentBookIndex].folderId) {
+                requestUrl += '/' + appGlobals.bookInfo[appGlobals.currentBookIndex].folderId;
             }
             requestUrl += '/items/' + currentItemId + '/delete';
             this._sendEsriRequest(queryParam, requestUrl, "delete", nls.errorMessages.deletingItemError);
@@ -455,9 +461,9 @@ define([
         _copyBookItem: function () {
             var configObj, bookTitle, queryParam, copiedConfig, requestUrl, requestType;
             //create title for copied book.
-            bookTitle = nls.copyKeyword + dojo.bookInfo[dojo.currentBookIndex].BookConfigData.title;
+            bookTitle = nls.copyKeyword + appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.title;
             domStyle.set(dom.byId("outerLoadingIndicator"), "display", "block");
-            copiedConfig = lang.clone(dojo.bookInfo[dojo.currentBookIndex]);
+            copiedConfig = lang.clone(appGlobals.bookInfo[appGlobals.currentBookIndex]);
             //set default property of copied book.
             copiedConfig.BookConfigData.copyProtected = false;
             copiedConfig.BookConfigData.UnSaveEditsExists = false;
@@ -466,14 +472,14 @@ define([
             copiedConfig.BookConfigData.title = bookTitle;
             copiedConfig.ModuleConfigData.CoverPage.title.text = bookTitle;
             copiedConfig.BookConfigData.author = this._portal.getPortalUser().fullName;
-            dojo.bookInfo.push(copiedConfig);
-            dojo.currentBookIndex = dojo.bookInfo.length - 1;
+            appGlobals.bookInfo.push(copiedConfig);
+            appGlobals.currentBookIndex = appGlobals.bookInfo.length - 1;
             configObj = JSON.stringify(copiedConfig);
             queryParam = {
                 itemType: "text",
                 f: 'json',
                 text: configObj,
-                tags: dojo.appConfigData.ConfigSearchTag,
+                tags: appGlobals.appConfigData.ConfigSearchTag,
                 title: copiedConfig.BookConfigData.title,
                 type: 'Web Mapping Application',
                 typeKeywords: 'JavaScript,Configurable'
@@ -498,10 +504,11 @@ define([
                 if (result.success) {
                     if (reqType === "copy" || reqType === "delete") {
                         if (reqType === "copy") {
-                            dojo.bookInfo[dojo.currentBookIndex].BookConfigData.itemId = result.id;
-                            if (dojo.appConfigData.DisplayBook === "group") {
+                            appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.itemId = result.id;
+                            if (appGlobals.appConfigData.DisplayBook === "group") {
                                 topic.publish("shareBookHandler", true);
                             }
+                            _self._saveSelectedBook();
                         }
                         topic.publish("destroyWebmapHandler");
                         setTimeout(function () {
@@ -509,11 +516,12 @@ define([
                             _self._displayLoginDialog();
                         }, 2000);
                     } else {
-                        dojo.bookInfo[dojo.currentBookIndex].BookConfigData.itemId = result.id;
+                        appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.itemId = result.id;
                         if (reqType === "add") {
-                            if (dojo.appConfigData.DisplayBook === "group") {
+                            if (appGlobals.appConfigData.DisplayBook === "group") {
                                 topic.publish("shareBookHandler", true);
                             }
+                            _self._saveSelectedBook();
                         }
                         domStyle.set(dom.byId("outerLoadingIndicator"), "display", "none");
                     }
@@ -569,15 +577,13 @@ define([
         */
         _setApplicationTheme: function () {
             var cssURL;
-            switch (dojo.appConfigData.ApplicationTheme) {
+            switch (appGlobals.appConfigData.ApplicationTheme) {
             case "blue":
                 cssURL = "themes/styles/theme-blue.css";
                 break;
-
             case "grey":
                 cssURL = "themes/styles/theme-grey.css";
                 break;
-
             default:
                 cssURL = "themes/styles/theme-grey.css";
                 break;

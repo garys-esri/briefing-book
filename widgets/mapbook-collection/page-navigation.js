@@ -1,4 +1,4 @@
-﻿/*global define,dojo*/
+﻿/*global define,dojo,appGlobals*/
 /*jslint browser:true,sloppy:true,nomen:true,unparam:true,plusplus:true,indent:4 */
 /*
  | Copyright 2014 Esri
@@ -26,8 +26,9 @@ define([
     "dojo/dnd/Source",
     "dojo/on",
     "dojo/query",
+    "dojo/string",
     "dojo/i18n!nls/localized-strings"
-], function (declare, lang, domConstruct, domAttr, domStyle, domClass, dom, DndSource, on, query, nls) {
+], function (declare, lang, domConstruct, domAttr, domStyle, domClass, dom, DndSource, on, query, dojoString, nls) {
     return declare([], {
         pageIndex: null,
         /**
@@ -37,7 +38,7 @@ define([
         * @name widgets/mapbook-collection/page-navigation
         */
         /**
-        * create page carousal for edit page
+        * create page carousel for edit page
         * @memberOf widgets/mapbook-collection/page-navigation
         */
         _createPageSlider: function () {
@@ -47,13 +48,13 @@ define([
             if (divPageSlider) {
                 domConstruct.empty(divPageSlider);
             }
-            bookPagesLength = dojo.bookInfo[dojo.currentBookIndex].BookConfigData.BookPages.length;
-            //create page carousal UI.
+            bookPagesLength = appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.BookPages.length;
+            //create page carousel UI.
             if (bookPagesLength > 0) {
-                //create left/previous arrow in page carousal.
+                //create left/previous arrow in page carousel.
                 divPageSliderLeft = domConstruct.create("div", { "class": "esriPageSliderLeft" }, divPageSlider);
                 divLeftArrowIcon = domConstruct.create("div", { "class": "esriLeftArrowIcon esriLeftArrowDisable" }, divPageSliderLeft);
-                //attach event on left arrow to slide carousal to left.
+                //attach event on left arrow to slide carousel to left.
                 on(divLeftArrowIcon, "click", function () {
                     if (!domClass.contains(this, "esriLeftArrowDisable")) {
                         _self._slidePage(true);
@@ -61,32 +62,32 @@ define([
                 });
 
                 divPageSliderContent = domConstruct.create("div", { "class": "esriPageSliderContent" }, divPageSlider);
-                //create right/next arrow in page carousal.
+                //create right/next arrow in page carousel.
                 divPageSliderRight = domConstruct.create("div", { "class": "esriPageSliderRight" }, divPageSlider);
                 divRightArrowIcon = domConstruct.create("div", { "class": "esriRightArrowIcon" }, divPageSliderRight);
-                //attach event on right arrow to slide carousal to right.
+                //attach event on right arrow to slide carousel to right.
                 on(divRightArrowIcon, "click", function () {
                     if (!domClass.contains(this, "esriRightArrowDisable")) {
                         _self._slidePage(false);
                     }
                 });
-                //start page carousal from first page.
+                //start page carousel from first page.
                 _self.pageIndex = 0;
-                ulist = domConstruct.create("ul", { "dndContType": "pageCarousal", "class": "esriPageSliderUlist" }, divPageSliderContent);
-                //create dnd container in carousal to swap pages.
-                uListDndCont = new DndSource(ulist, { accept: ["carousalPage"] });
-                //create page icon UI in page carousal.
+                ulist = domConstruct.create("ul", { "dndContType": "pageCarousel", "class": "esriPageSliderUlist" }, divPageSliderContent);
+                //create dnd container in carousel to swap pages.
+                uListDndCont = new DndSource(ulist, { accept: ["carouselPage"] });
+                //create page icon UI in page carousel.
                 for (bookPageIndex = 0; bookPageIndex < bookPagesLength; bookPageIndex++) {
                     listItem = domConstruct.create("li", { "class": "esriPageSliderListItem" }, null);
                     domAttr.set(listItem, "index", bookPageIndex + 2);
                     domConstruct.create("div", { "class": "esriPageSliderDiv esriBookPage", "index": bookPageIndex + 2, "innerHTML": nls.pageText + (bookPageIndex + 1) }, listItem);
                     on(listItem, "click", lang.hitch(this, this._viewSelectedpage));
-                    listItem.dndType = "carousalPage";
+                    listItem.dndType = "carouselPage";
                     dndPageList.push(listItem);
                 }
                 uListDndCont.insertNodes(false, dndPageList);
                 uListDndCont.forInItems(function (item, id, map) {
-                    domClass.add(id, "carousalPage");
+                    domClass.add(id, "carouselPage");
                 });
                 uListDndCont.sync();
                 if (bookPagesLength === 0) {
@@ -112,7 +113,7 @@ define([
         */
         _handlePageNavigation: function (currentObj, isSlideLeft) {
             var currentClass, totalPageLength;
-            totalPageLength = this.mapBookDetails[dojo.currentBookIndex].length;
+            totalPageLength = this.mapBookDetails[appGlobals.currentBookIndex].length;
             //allow user to change the page if page navigation is enabled.
             if (this.isNavigationEnabled) {
                 //check which arrow is clicked.
@@ -129,7 +130,7 @@ define([
                         }
                     }
                     //skip content page and display next/previous page if content page is not created.
-                    if (this.mapBookDetails[dojo.currentBookIndex][this.currentIndex] === "EmptyContent") {
+                    if (this.mapBookDetails[appGlobals.currentBookIndex][this.currentIndex] === "EmptyContent") {
                         if (isSlideLeft) { this.currentIndex = 0; } else { this.currentIndex++; }
                     }
                     this._slideBookPage();
@@ -142,8 +143,8 @@ define([
         * @memberOf widgets/mapbook-collection/page-navigation
         */
         _setArrowVisibility: function () {
-            var totalPageLength = this.mapBookDetails[dojo.currentBookIndex].length;
-            if (this.mapBookDetails[dojo.currentBookIndex][1] === "EmptyContent") {
+            var totalPageLength = this.mapBookDetails[appGlobals.currentBookIndex].length;
+            if (this.mapBookDetails[appGlobals.currentBookIndex][1] === "EmptyContent") {
                 totalPageLength--;
             }
             if (this.currentIndex === 0) {
@@ -168,11 +169,11 @@ define([
         _slideBookPage: function () {
             var pageWidth, left;
             pageWidth = domStyle.get(query(".esriMapBookPageListItem")[0], "width");
-            if (this.mapBookDetails[dojo.currentBookIndex][1] === "EmptyContent" && this.currentIndex !== 0) {
-                //slide page carousal to right.
+            if (this.mapBookDetails[appGlobals.currentBookIndex][1] === "EmptyContent" && this.currentIndex !== 0) {
+                //slide page carousel to right.
                 left = (this.currentIndex - 1) * Math.ceil(pageWidth);
             } else {
-                //slide page carousal to left.
+                //slide page carousel to left.
                 left = (this.currentIndex) * Math.ceil(pageWidth);
             }
             dom.byId("mapBookPagesUList").style.marginLeft = -left + 'px';
@@ -194,15 +195,15 @@ define([
             var pageNavigationTitle;
             if (this.currentIndex >= 2) {
                 //display delete page icon on application header for book pages(not for cover and content page), if book is in edit mode.
-                if (dojo.appConfigData.AuthoringMode && this.isEditModeEnable) {
+                if (appGlobals.appConfigData.AuthoringMode && this.isEditModeEnable) {
                     domStyle.set(query(".esriDeleteIcon")[0], "display", "block");
                 }
                 //display selected page status for book pages.
                 domStyle.set(query(".esriFooterDiv")[0], "display", "block");
-                pageNavigationTitle = dojo.string.substitute(nls.pageText + " ${pageIndex} " + nls.ofText + " ${totalPages}", { pageIndex: this.currentIndex - 1, totalPages: (this.mapBookDetails[dojo.currentBookIndex].length - 2) });
+                pageNavigationTitle = dojoString.substitute(nls.pageText + "${pageIndex}" + nls.ofText + "${totalPages}", { pageIndex: this.currentIndex - 1, totalPages: (this.mapBookDetails[appGlobals.currentBookIndex].length - 2) });
                 domAttr.set(dom.byId("esriPaginationSpan"), "innerHTML", pageNavigationTitle);
             } else {
-                if (dojo.appConfigData.AuthoringMode) {
+                if (appGlobals.appConfigData.AuthoringMode) {
                     domStyle.set(query(".esriDeleteIcon")[0], "display", "none");
                 }
                 domStyle.set(query(".esriFooterDiv")[0], "display", "none");
@@ -211,12 +212,12 @@ define([
         },
 
         /**
-        * highlight selected page in page slider/carousal of edit page
+        * highlight selected page in page slider/carousel of edit page
         * @memberOf widgets/mapbook-collection/page-navigation
         */
         _highlightSelectedPage: function () {
             var preSelectedPage, bookPageList, sliderContentWidth, totalUlistWidth;
-            if (this.mapBookDetails[dojo.currentBookIndex][this.currentIndex] === "EmptyContent") {
+            if (this.mapBookDetails[appGlobals.currentBookIndex][this.currentIndex] === "EmptyContent") {
                 this.currentIndex++;
             }
             preSelectedPage = query('.esriPageSelected');
@@ -226,11 +227,11 @@ define([
                 if (preSelectedPage[0]) {
                     domClass.remove(preSelectedPage[0], "esriPageSelected");
                 }
-                //show currently selected page icon highlighted in page carousal.
+                //show currently selected page icon highlighted in page carousel.
                 if (bookPageList[this.currentIndex]) {
                     domClass.add(bookPageList[this.currentIndex], "esriPageSelected");
                 }
-                //disable next arrow of page carousal if all page icon are vissible in it.
+                //disable next arrow of page carousel if all page icon are vissible in it.
                 if (domStyle.get(query(".esriPageSliderContainer")[0], "display") === "inline-block") {
                     if (query('.esriPageSliderListItem')[0]) {
                         sliderContentWidth = domStyle.get(query('.esriPageSliderContent')[0], 'width');
@@ -250,7 +251,7 @@ define([
         */
         _slidePage: function (isSlideLeft) {
             var pageWidth, pageUList, sliderLeft = 0;
-            //slide page carousal to left/right when navigation arrows get clicked.
+            //slide page carousel to left/right when navigation arrows get clicked.
             if (domStyle.get(query(".esriPageSliderContainer")[0], "display") === "inline-block") {
                 pageWidth = domStyle.get(query('.esriPageSliderListItem')[0], "width");
                 pageUList = query('.esriPageSliderUlist')[0];
@@ -264,7 +265,7 @@ define([
         },
 
         /**
-        * set edit page's page slider/page carousal's arrow visibility on page navigation
+        * set edit page's page slider/page carousel's arrow visibility on page navigation
         * @memberOf widgets/mapbook-collection/page-navigation
         */
         _setSliderArrows: function () {
@@ -280,19 +281,19 @@ define([
                         //show left arrow disable if first page is selected.
                         domClass.add(query('.esriLeftArrowIcon')[0], "esriLeftArrowDisable");
                         if (sliderContentWidth < pageUlistWidth) {
-                            //show right arrow enable if last page is not visible in page carousal.
+                            //show right arrow enable if last page is not visible in page carousel.
                             this._removeClass(query('.esriRightArrowIcon')[0], "esriRightArrowDisable");
                         } else {
-                            //show right arrow disable if last page is visible in page carousal.
+                            //show right arrow disable if last page is visible in page carousel.
                             domClass.add(query('.esriRightArrowIcon')[0], "esriRightArrowDisable");
                         }
                     } else {
                         this._removeClass(query('.esriLeftArrowIcon')[0], "esriLeftArrowDisable");
-                        //show right arrow disable if last page is visible in page carousal.
+                        //show right arrow disable if last page is visible in page carousel.
                         if (sliderContentWidth >= pageUlistWidth + sliderleft) {
                             domClass.add(query('.esriRightArrowIcon')[0], "esriRightArrowDisable");
                         } else {
-                            //show right arrow enable if last page is not visible in page carousal.
+                            //show right arrow enable if last page is not visible in page carousel.
                             this._removeClass(query('.esriRightArrowIcon')[0], "esriRightArrowDisable");
                         }
                     }
@@ -301,13 +302,13 @@ define([
         },
 
         /**
-        * set page carousal width of edit page
+        * set page carousel width of edit page
         * @memberOf widgets/mapbook-collection/page-navigation
         */
         _setSliderWidth: function () {
             var sliderContainer, sliderContainerWidth;
             sliderContainer = query('.esriPageSliderContainer')[0];
-            //calculate width of page carousal to display it in edit page header.
+            //calculate width of page carousel to display it in edit page header.
             sliderContainerWidth = domStyle.get(query('.esriEditPageHeader')[0], "width") - domStyle.get(query('.esriEditPageOptionList')[0], "width") - domStyle.get(query('.esriAddNewPageDiv')[0], "width");
             if (sliderContainer) {
                 if (sliderContainerWidth > 0) {

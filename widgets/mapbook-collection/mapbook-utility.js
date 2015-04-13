@@ -1,4 +1,4 @@
-﻿/*global define,dojo,dijit*/
+﻿/*global define,dojo,dijit,appGlobals*/
 /*jslint browser:true,sloppy:true,nomen:true,unparam:true,plusplus:true,indent:4 */
 /*
  | Copyright 2014 Esri
@@ -285,7 +285,7 @@ define([
                 if (isEditModeEnable) {
                     dndCont.delay = 0;
                     dndCont.checkAcceptance = function (source, nodes) {
-                        if (nodes[0].dndType !== "carousalPage") {
+                        if (nodes[0].dndType !== "carouselPage") {
                             return true;
                         }
                     };
@@ -309,7 +309,7 @@ define([
             closeBtns = query('.esriBookClose');
             array.forEach(closeBtns, function (deleteBtn, index) {
                 selectedBookIndex = domAttr.get(deleteBtn.parentElement, "index");
-                if (isEnable && dojo.bookInfo[selectedBookIndex].BookConfigData.owner === dojo.currentUser) {
+                if (isEnable && appGlobals.bookInfo[selectedBookIndex].BookConfigData.owner === appGlobals.currentUser) {
                     //display delete icon on those books, which is created by the logging user.
                     domClass.add(bookTitle[index], "esriBookTitledivchange");
                     domStyle.set(deleteBtn, "display", "block");
@@ -335,7 +335,7 @@ define([
             var configLayout, selectedTemp, _self = this;
 
             selectedTemp = query('.pageLayoutOption .esriTemplateImage');
-            configLayout = dojo.appConfigData.BookPageLayouts;
+            configLayout = appGlobals.appConfigData.BookPageLayouts;
             //remove selection from earlier selected template option for book pages.
             array.forEach(selectedTemp, function (template, index) {
                 _self._removeClass(template, "selectedTemplate");
@@ -343,7 +343,7 @@ define([
             });
 
             selectedTemp = query('.contentLayoutOption .esriTemplateImage');
-            configLayout = dojo.appConfigData.ContentPageLayouts;
+            configLayout = appGlobals.appConfigData.ContentPageLayouts;
             //remove selection from earlier selected template option for content page.
             array.forEach(selectedTemp, function (template, index) {
                 _self._removeClass(template, "selectedTemplate");
@@ -404,7 +404,7 @@ define([
                     domStyle.set(resizerObj.targetDomNode, "height", newHeight + 'px');
                 }
             }
-            configData = this._getConfigData(dojo.bookInfo[dojo.currentBookIndex].ModuleConfigData);
+            configData = this._getConfigData(appGlobals.bookInfo[appGlobals.currentBookIndex].ModuleConfigData);
             //update height of the module in book JSON.
             configData[moduleKey].height = Math.floor(newHeight);
         },
@@ -416,7 +416,7 @@ define([
         */
         _updatePageHeight: function () {
             var selectedPage, listItemIndex = this.currentIndex;
-            if (this.currentIndex > 0 && this.mapBookDetails[dojo.currentBookIndex][1] === "EmptyContent") {
+            if (this.currentIndex > 0 && this.mapBookDetails[appGlobals.currentBookIndex][1] === "EmptyContent") {
                 listItemIndex = this.currentIndex - 1;
             }
             selectedPage = query('.esriMapBookPage', dom.byId("mapBookPagesUList").childNodes[listItemIndex])[0];
@@ -451,7 +451,7 @@ define([
                 domStyle.set(imgModule, "maxWidth", imgModule.offsetWidth + 'px');
             }
             imgWidth = parseFloat(domAttr.get(imgModule, "originalWidth"));
-            if ((imgContainer.offsetWidth > 0) && (imgContainer.offsetWidth < imgModule.offsetWidth || imgWidth > imgContainer.offsetWidth)) {
+            if ((imgWidth > 0 && imgContainer.offsetWidth > 0) && (imgContainer.offsetWidth < imgModule.offsetWidth || imgWidth > imgContainer.offsetWidth)) {
                 //change dimensions of image if it is larger/smaller than its parent container.
                 //calculate aspect ratio of image.
                 aspectRatio = imgModule.offsetWidth / imgModule.offsetHeight;

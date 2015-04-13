@@ -1,4 +1,4 @@
-﻿/*global define,dojo */
+﻿/*global define,dojo,appGlobals*/
 /*jslint browser:true,sloppy:true,nomen:true,unparam:true,plusplus:true,indent:4 */
 /*
  | Copyright 2013 Esri
@@ -58,7 +58,7 @@ define([
                     sharebook.startup();
                 }, function () {
                     var message = "";
-                    if (dojo.appConfigData.PortalURL && lang.trim(dojo.appConfigData.PortalURL) !== "") {
+                    if (appGlobals.appConfigData.PortalURL && lang.trim(appGlobals.appConfigData.PortalURL) !== "") {
                         //display error message if any widget fails to load.
                         message = nls.errorMessages.configurationError;
                     } else {

@@ -1,4 +1,4 @@
-﻿/*global define,dojo,dijit,esriConfig*/
+﻿/*global define,dojo,dijit,esriConfig,appGlobals*/
 /*jslint browser:true,sloppy:true,nomen:true,unparam:true,plusplus:true,indent:4 */
 /*
  | Copyright 2014 Esri
@@ -124,11 +124,11 @@ define([
             //destroy selected module container.
             this._destroyExistingNode(moduleContainer.parentElement, false);
             colIndex = parseInt(domAttr.get(moduleContainer, "columnIndex"), 10);
-            bookList = this._getConfigData(dojo.bookInfo[dojo.currentBookIndex].BookConfigData);
-            moduleData = this._getConfigData(dojo.bookInfo[dojo.currentBookIndex].ModuleConfigData);
+            bookList = this._getConfigData(appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData);
+            moduleData = this._getConfigData(appGlobals.bookInfo[appGlobals.currentBookIndex].ModuleConfigData);
             contentIndex = array.indexOf(bookList.content[colIndex], moduleKey);
             bookList.content[colIndex].splice(contentIndex, 1);
-            this.mapBookDetails[dojo.currentBookIndex][this.currentIndex].content[colIndex].splice(contentIndex, 1);
+            this.mapBookDetails[appGlobals.currentBookIndex][this.currentIndex].content[colIndex].splice(contentIndex, 1);
             //delete data about module from book JSON.
             delete moduleData[moduleKey];
             //destroy map instance if selected module type is webmap.
@@ -156,7 +156,7 @@ define([
             moduleIndex = domAttr.get(pageModule, "moduleIndex");
             domAttr.set(pageModule.parentElement, "moduleIndex", moduleIndex);
             //get default module attributes from config.
-            pageContentModule = lang.clone(dojo.appConfigData.ModuleDefaultsConfig[currentModuleContent]);
+            pageContentModule = lang.clone(appGlobals.appConfigData.ModuleDefaultsConfig[currentModuleContent]);
             contentIndex = parseInt(domAttr.get(pageModule.parentElement, "contentIndex"), 10);
             columnIndex = parseInt(domAttr.get(pageModule.parentElement, "columnIndex"), 10);
             this._setDefaultText(pageContentModule);
@@ -165,7 +165,7 @@ define([
             domAttr.set(pageModule.parentElement, "type", pageContentModule.type);
             if (currentModuleContent === "title" || currentModuleContent === "author") {
                 newModuleKey = currentModuleContent;
-                pageContentModule[pageContentModule.type] = dojo.bookInfo[dojo.currentBookIndex].BookConfigData[currentModuleContent];
+                pageContentModule[pageContentModule.type] = appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData[currentModuleContent];
             } else {
                 //generate unique id to access module fom book JSON.
                 newModuleKey = ((new Date()).getTime()).toString() + contentIndex.toString() + columnIndex.toString(); //get unique key in microseconds
@@ -199,21 +199,21 @@ define([
                     inputFieldValue = moduleInputs[inputIndex].editNode.textContent || moduleInputs[inputIndex].editNode.innerText;
                     if (moduleKey === "author") {
                         //update author name in book JSON.
-                        dojo.bookInfo[dojo.currentBookIndex].BookConfigData.author = lang.trim(inputFieldValue);
+                        appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.author = lang.trim(inputFieldValue);
                     } else if (moduleKey === "title") {
                         //update page title in book JSON.
                         pageTitle = inputFieldValue;
                         if (this.currentIndex === 0) {
-                            dojo.bookInfo[dojo.currentBookIndex].BookConfigData.title = pageTitle;
-                        } else if (this.currentIndex === 1 && this.mapBookDetails[dojo.currentBookIndex][inputIndex] !== "EmptyContent") {
-                            dojo.bookInfo[dojo.currentBookIndex].BookConfigData.ContentPage.title = pageTitle;
+                            appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.title = pageTitle;
+                        } else if (this.currentIndex === 1 && this.mapBookDetails[appGlobals.currentBookIndex][inputIndex] !== "EmptyContent") {
+                            appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.ContentPage.title = pageTitle;
                         } else {
-                            dojo.bookInfo[dojo.currentBookIndex].BookConfigData.BookPages[this.currentIndex - 2].title = pageTitle;
+                            appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.BookPages[this.currentIndex - 2].title = pageTitle;
                         }
                     }
                 }
             }
-            moduleContent = this._getConfigData(dojo.bookInfo[dojo.currentBookIndex].ModuleConfigData);
+            moduleContent = this._getConfigData(appGlobals.bookInfo[appGlobals.currentBookIndex].ModuleConfigData);
             moduleAttr = moduleContent[moduleKey];
             //update module attributes in bookJSON.
             for (attr in moduleData) {
@@ -221,12 +221,12 @@ define([
                     moduleAttr[attr] = moduleData[attr];
                 }
             }
-            bookListData = this._getConfigData(dojo.bookInfo[dojo.currentBookIndex].BookConfigData);
+            bookListData = this._getConfigData(appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData);
             moduleIndex = domAttr.get(moduleContainer, "moduleIndex");
             if (moduleKey === "title" && this.currentIndex !== 0) {
                 this._createTitleModule(moduleAttr, moduleContainer);
                 bookListData.title = pageTitle;
-                this.mapBookDetails[dojo.currentBookIndex][this.currentIndex][moduleKey] = pageTitle;
+                this.mapBookDetails[appGlobals.currentBookIndex][this.currentIndex][moduleKey] = pageTitle;
                 //update TOC if page title gets changed.
                 this._updateTOC();
             } else {
@@ -250,7 +250,7 @@ define([
             var columnIndex, pageModule, inputFields, moduleData, divModuleContent, inputKey, moduleAttr, bookList, newModuleKey, newModuleIndex, inputIndex;
 
             columnIndex = parseInt(domAttr.get(targetContainer.node, "columnIndex"), 10);
-            newModuleIndex = index.toString() + columnIndex.toString() + this.currentIndex.toString() + "new" + dojo.currentBookIndex.toString();
+            newModuleIndex = index.toString() + columnIndex.toString() + this.currentIndex.toString() + "new" + appGlobals.currentBookIndex.toString();
             inputFields = query('.esriSettingInput');
             moduleData = {};
             //fetch input values
@@ -272,14 +272,14 @@ define([
             domAttr.set(this.currentNode, "moduleKey", newModuleKey);
             this.currentNode.appendChild(divModuleContent);
 
-            bookList = this._getConfigData(dojo.bookInfo[dojo.currentBookIndex].BookConfigData);
-            moduleAttr = this._getConfigData(dojo.bookInfo[dojo.currentBookIndex].ModuleConfigData);
+            bookList = this._getConfigData(appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData);
+            moduleAttr = this._getConfigData(appGlobals.bookInfo[appGlobals.currentBookIndex].ModuleConfigData);
             if (!bookList.content[columnIndex]) {
                 bookList.content[columnIndex] = [];
             }
             bookList.content[columnIndex].splice(this.currentNode.index, 0, newModuleKey);
             moduleAttr[newModuleKey] = moduleData;
-            this.mapBookDetails[dojo.currentBookIndex][this.currentIndex].content = bookList.content;
+            this.mapBookDetails[appGlobals.currentBookIndex][this.currentIndex].content = bookList.content;
             //update column height if new module is added.
             this._setColumnHeight(targetContainer.node.parentElement);
             dijit.byId("settingDialog").hide();
@@ -293,19 +293,19 @@ define([
         */
         _createLogo: function (pageContentModule, pageModule) {
             var moduleIndex, divLogo, divImage, _self = this;
-            dojo.moduleLoadingCount++;
+            appGlobals.moduleLoadingCount++;
             moduleIndex = "resizable" + domAttr.get(pageModule.parentElement, "moduleIndex");
             divLogo = domConstruct.create("div", { "class": "innerDiv", "id": moduleIndex }, pageModule);
             divImage = domConstruct.create("img", { "class": "esriLogoIcon", "id": "img" + moduleIndex, "style": 'height:' + pageContentModule.height + 'px;width:auto' }, divLogo);
             on(divImage, "load", function () {
                 //set image dimension when it gets loaded.
                 _self._setImageDimensions(this, true);
-                dojo.moduleLoadingCount--;
+                appGlobals.moduleLoadingCount--;
                 _self._updatePageHeight();
             });
             divImage.src = pageContentModule.URL;
             on(divImage, "error", function () {
-                dojo.moduleLoadingCount--;
+                appGlobals.moduleLoadingCount--;
             });
             this._createEditMenu(pageModule.parentElement, pageContentModule.uid, divImage);
         },
@@ -337,7 +337,7 @@ define([
             if (moduleData.uid === "author") {
                 //set logged in user's full name as author name of the book.
                 domClass.add(divText, "esriArialFont esriMapBookAuthor");
-                query('.esriBookAuthor')[dojo.currentBookIndex].innerHTML = dojo.bookInfo[dojo.currentBookIndex].BookConfigData.author;
+                query('.esriBookAuthor')[appGlobals.currentBookIndex].innerHTML = appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.author;
             } else if (moduleData.uid === "title") {
                 this._createCoverPageTitle(divText);
             } else {
@@ -353,20 +353,20 @@ define([
         */
         _createCoverPageTitle: function (divText) {
             var pageTitle, bookPages;
-            pageTitle = dojo.bookInfo[dojo.currentBookIndex].BookConfigData.title;
+            pageTitle = appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.title;
             domClass.add(divText, "esriGeorgiaFont esriPageTitle esriTitleFontSize");
-            this.mapBookDetails[dojo.currentBookIndex][this.currentIndex].title = pageTitle;
+            this.mapBookDetails[appGlobals.currentBookIndex][this.currentIndex].title = pageTitle;
             //update book title in book gallery.
-            query('.esriBookTitle')[dojo.currentBookIndex].innerHTML = pageTitle;
-            query('.esriMapBookList')[dojo.currentBookIndex].value = pageTitle;
-            bookPages = lang.clone(this.mapBookDetails[dojo.currentBookIndex]);
-            delete this.mapBookDetails[dojo.currentBookIndex];
-            this.mapBookDetails[dojo.currentBookIndex] = bookPages;
+            query('.esriBookTitle')[appGlobals.currentBookIndex].innerHTML = pageTitle;
+            query('.esriMapBookList')[appGlobals.currentBookIndex].value = pageTitle;
+            bookPages = lang.clone(this.mapBookDetails[appGlobals.currentBookIndex]);
+            delete this.mapBookDetails[appGlobals.currentBookIndex];
+            this.mapBookDetails[appGlobals.currentBookIndex] = bookPages;
             //update book title in book header.
-            if (query('.esriMapBookTitle')[0]) {
-                domAttr.set(query('.esriMapBookTitle')[0], "innerHTML", pageTitle);
-            }
-            domAttr.set(query('.esriBookTitle')[dojo.currentBookIndex], "title", pageTitle);
+            array.forEach(query('.esriMapBookTitle'), function (titleNode) {
+                domAttr.set(titleNode, "innerHTML", pageTitle);
+            });
+            domAttr.set(query('.esriBookTitle')[appGlobals.currentBookIndex], "title", pageTitle);
             this._updateTOC();
         },
 
@@ -401,7 +401,7 @@ define([
             });
             //create web map instance if webmap id/URL is available.
             if (pageContentModule.URL) {
-                dojo.moduleLoadingCount++;
+                appGlobals.moduleLoadingCount++;
                 //create loading icon to display map is loading.
                 loadingIndicator = domConstruct.create("div", { id: "loadingmap" + moduleIndex, "class": "esriModuleLoadingIndicator" }, mapContent);
                 domConstruct.create("div", { "class": "esriModuleLoadingIndicatorImage" }, loadingIndicator);
@@ -465,8 +465,12 @@ define([
                                 response.map.resize();
                                 response.map.reposition();
                                 if (_self.isEditModeEnable) {
-                                    evt.stopPropagation();
-                                    evt.preventDefault();
+                                    if (evt.stopPropagation) {
+                                        evt.stopPropagation();
+                                    }
+                                    if (evt.preventDefault) {
+                                        evt.preventDefault();
+                                    }
                                 }
                             }));
                         }
@@ -479,9 +483,9 @@ define([
                         //destroy map instance, if webmap response comes after closing the book.
                         response.map.destroy();
                     }
-                    dojo.moduleLoadingCount--;
+                    appGlobals.moduleLoadingCount--;
                 }, function () {
-                    dojo.moduleLoadingCount--;
+                    appGlobals.moduleLoadingCount--;
                     //display error message if webmap gets failed to load.
                     if (dom.byId("loading" + mapId).children[0]) {
                         domAttr.set(dom.byId("loading" + mapId).children[0], "innerHTML", nls.errorMessages.webmapError);
@@ -562,7 +566,7 @@ define([
         _createFullViewMap: function (btnViewFullMap, moduleIndex) {
             var divFullMapView, currentPage, _self = this, fullMapIndex = this.currentIndex;
             divFullMapView = domConstruct.create("div", { "class": "esriFullMap", "id": "viewFull" + moduleIndex }, null);
-            if (this.mapBookDetails[dojo.currentBookIndex][1] === "EmptyContent" && this.currentIndex !== 0) {
+            if (this.mapBookDetails[appGlobals.currentBookIndex][1] === "EmptyContent" && this.currentIndex !== 0) {
                 fullMapIndex--;
             }
             currentPage = dom.byId("mapBookPagesUList").children[fullMapIndex];
@@ -598,8 +602,8 @@ define([
             var innerDiv, imgModule, imgPath, loadingIndicator, loadingIcon, _self = this;
             //create outer container for image.
             innerDiv = domConstruct.create("div", { "id": "innerDiv" + "Img" + moduleIndex, "style": 'height:auto', "class": "innerDiv" }, pageModule);
-            dojo.moduleLoadingCount++;
-            if (dojo.isString(pageContentModule.URL) && lang.trim(pageContentModule.URL) !== "") {
+            appGlobals.moduleLoadingCount++;
+            if (lang.isString(pageContentModule.URL) && lang.trim(pageContentModule.URL) !== "") {
                 //create loading icon for image.
                 loadingIndicator = domConstruct.create("div", { id: "resizableImg" + moduleIndex + "loading", "class": "esriModuleLoadingIndicator" }, innerDiv);
                 domConstruct.create("div", { "class": "esriModuleLoadingIndicatorImage" }, loadingIndicator);
@@ -612,14 +616,14 @@ define([
                     loadingIcon = query('.esriModuleLoadingIndicator', this.parentElement)[0];
                     domStyle.set(loadingIcon, "display", "none");
                     _self._setImageDimensions(this, true);
-                    dojo.moduleLoadingCount--;
+                    appGlobals.moduleLoadingCount--;
                     _self._updatePageHeight();
                 });
                 imgModule.src = pageContentModule.URL;
                 on(imgModule, "error", function (e) {
                     //hide loading icon when image gets failed to load.
                     domStyle.set(dom.byId(this.id + "loading"), "display", "none");
-                    dojo.moduleLoadingCount--;
+                    appGlobals.moduleLoadingCount--;
                 });
                 on(imgModule, "click", function (evt) {
                     //allow user to view image in light box if edit mode is disable and image is loaded.
@@ -643,7 +647,7 @@ define([
             if (pageContentModule.title) {
                 embed += '<div class="esriModuleTitle">' + pageContentModule.title + '</div>';
             }
-            if (dojo.isString(pageContentModule.URL) && lang.trim(pageContentModule.URL) !== "") {
+            if (lang.isString(pageContentModule.URL) && lang.trim(pageContentModule.URL) !== "") {
                 //identify which type of video URL is provided by searching keywords 'vimeo', 'esri','youtube' in URL.
                 if (pageContentModule.URL.match("vimeo")) {
                     videoProvider = "vimeo";
@@ -660,7 +664,7 @@ define([
                         urlParam = urlParam[urlParam.length - 1];
                     }
                     //create frame to display vimeo video.
-                    videoURL = dojo.appConfigData.VimeoVideoUrl + urlParam;
+                    videoURL = appGlobals.appConfigData.VimeoVideoUrl + urlParam;
                     embed += "<iframe width=" + "90%" + " height=" + pageContentModule.height + "px src='" + videoURL + "' frameborder=0 webkitAllowFullScreen mozallowfullscreen allowFullScreen></iframe>";
                     break;
                 case "youtube":
@@ -668,14 +672,14 @@ define([
                         urlParam = videoURL.query.v;
                     }
                     //create frame to display youtube video.
-                    videoURL = dojo.appConfigData.YouTubeVideoUrl + urlParam;
+                    videoURL = appGlobals.appConfigData.YouTubeVideoUrl + urlParam;
                     embed += "<iframe width=" + "90%" + " height=" + pageContentModule.height + "px src='" + videoURL + "' frameborder='0' allowfullscreen></iframe>";
                     break;
                 case "esri":
                     if (videoURL) {
                         videoURL = pageContentModule.URL.replace("watch", "iframe");
                     } else {
-                        videoURL = dojo.appConfigData.EsriVideoUrl + urlParam;
+                        videoURL = appGlobals.appConfigData.EsriVideoUrl + urlParam;
                     }
                     //create frame to display esri video.
                     embed += "<iframe width=" + "90%" + " height=" + pageContentModule.height + "px src='" + videoURL + "' frameborder=0 webkitAllowFullScreen mozallowfullscreen allowFullScreen></iframe>";
@@ -710,12 +714,12 @@ define([
             this._destroyExistingNode(tocContent, false);
             tocContent = domConstruct.create("div", { "class": "esriTOCcontainer" }, null);
             //add page title and page no in TOC
-            for (pageIndex = 0; pageIndex < _self.mapBookDetails[dojo.currentBookIndex].length; pageIndex++) {
-                if (_self.mapBookDetails[dojo.currentBookIndex][pageIndex] !== "EmptyContent") {
+            for (pageIndex = 0; pageIndex < _self.mapBookDetails[appGlobals.currentBookIndex].length; pageIndex++) {
+                if (_self.mapBookDetails[appGlobals.currentBookIndex][pageIndex] !== "EmptyContent") {
                     anchorTag = domConstruct.create("div", { "value": pageIndex, "class": "esriContentListDiv" }, null);
                     divPageTitle = domConstruct.create("div", { "value": pageIndex, "class": "esriTitleListDiv" }, anchorTag);
                     divPageNo = domConstruct.create("div", { "value": pageIndex, "class": "esriTitleIndexDiv" }, anchorTag);
-                    title = _self.mapBookDetails[dojo.currentBookIndex][pageIndex].title;
+                    title = _self.mapBookDetails[appGlobals.currentBookIndex][pageIndex].title;
                     domAttr.set(divPageTitle, "innerHTML", title);
                     if (pageIndex > 1) {
                         domAttr.set(divPageNo, "innerHTML", (pageIndex - 1));
@@ -742,7 +746,7 @@ define([
 
             if (!domClass.contains(target.parentElement.parentElement.parentElement, "esriEditableModeContent")) {
                 //on clicking of page title in TOC open respective page.
-                if (this.mapBookDetails[dojo.currentBookIndex][target.value] !== "EmptyContent") {
+                if (this.mapBookDetails[appGlobals.currentBookIndex][target.value] !== "EmptyContent") {
                     this._gotoPage(target.value);
                     event.cancelBubble = true;
                     event.cancelable = true;
@@ -781,7 +785,7 @@ define([
             };
             //add 'setid' param if provided.
             if (flickrSetId && lang.trim(flickrSetId) !== "") {
-                flickrParams.setId = flickrSetId;
+                flickrParams.setid = flickrSetId;
             }
             //add 'apikey' param if provided.
             if (moduleData.apiKey && lang.trim(moduleData.apiKey) !== "") {
@@ -851,7 +855,7 @@ define([
                         //get confirmation from user to delete selected module.
                         _self.alertDialog._setContent(nls.confirmModuleDeleting, 1).then(function (deleteModuleFlag) {
                             if (deleteModuleFlag) {
-                                dojo.bookInfo[dojo.currentBookIndex].BookConfigData.UnSaveEditsExists = true;
+                                appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.UnSaveEditsExists = true;
                                 _self._deleteModule(domAttr.get(deleteBtnNode, "type"), moduleContainer, domAttr.get(deleteBtnNode, "key"));
                             }
                         });
