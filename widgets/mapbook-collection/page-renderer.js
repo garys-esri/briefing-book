@@ -1,4 +1,4 @@
-﻿/*global define,dojo,dijit*/
+﻿/*global define,dojo,dijit,appGlobals*/
 /*jslint browser:true,sloppy:true,nomen:true,unparam:true,plusplus:true,indent:4 */
 /*
  | Copyright 2014 Esri
@@ -26,10 +26,11 @@ define([
     "dojo/dom",
     "dojo/on",
     "dojo/query",
+    "dojo/window",
     "dojo/i18n!nls/localized-strings",
     "dijit/Dialog",
     "dojo/parser"
-], function (declare, array, lang, domConstruct, domAttr, domStyle, domClass, dom, on, query, nls, Dialog) {
+], function (declare, array, lang, domConstruct, domAttr, domStyle, domClass, dom, on, query, dojoWindow, nls, Dialog) {
     return declare([], {
         /**
         * create mapbook page renderer widget
@@ -74,7 +75,7 @@ define([
             settingDialog.startup();
             settingDialog.closeButtonNode.title = nls.closeButtonTitle;
             settingDialog.hide();
-            //create UI for edit page to display page carousal, add page button and layouts for content and book pages.
+            //create UI for edit page to display page carousel, add page button and layouts for content and book pages.
             this._renderEditPage();
         },
 
@@ -86,17 +87,17 @@ define([
         _renderPage: function (page) {
             var listItem, pageHeight, currentPageContainer;
             listItem = domConstruct.create("li", { "class": "esriMapBookPageListItem" }, null);
-            listItem.innerHTML = '<div class="esriPageHeaderDiv"><div class="esriMapBookTitle">' + dojo.bookInfo[dojo.currentBookIndex].BookConfigData.title + '</div></div>';
+            listItem.innerHTML = '<div class="esriPageHeaderDiv"><div class="esriMapBookTitle">' + appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.title + '</div></div>';
             dom.byId("mapBookPagesUList").appendChild(listItem);
             this.currentIndex = page.index;
             //create outer container for page.
             currentPageContainer = domConstruct.create("div", { "class": "esriMapBookPage", "pageIndex": page.index }, listItem);
             domStyle.set(currentPageContainer, "width", Math.ceil(dom.byId("mapBookContentContainer").offsetWidth) + 'px');
             this._createPageLayout(page, currentPageContainer);
-            pageHeight = dojo.window.getBox().h - domStyle.get(dom.byId("mapBookHeaderContainer"), "height") - 5;
+            pageHeight = dojoWindow.getBox().h - domStyle.get(dom.byId("mapBookHeaderContainer"), "height") - 5;
 
             if (this.isEditModeEnable) {
-                //shift page to down to display page carousal above it.
+                //shift page to down to display page carousel above it.
                 if (query(".esriEditPageHeader")[0]) {
                     domStyle.set(currentPageContainer, "margin-top", domStyle.get(query(".esriEditPageHeader")[0], "height") + 'px');
                     pageHeight -= domStyle.get(query(".esriEditPageHeader")[0], "height");
@@ -119,16 +120,16 @@ define([
         */
         _createCoverPage: function () {
             var coverPage, defaultTitle;
-            if (!dojo.bookInfo[dojo.currentBookIndex].ModuleConfigData) {
-                dojo.bookInfo[dojo.currentBookIndex].ModuleConfigData = {};
+            if (!appGlobals.bookInfo[appGlobals.currentBookIndex].ModuleConfigData) {
+                appGlobals.bookInfo[appGlobals.currentBookIndex].ModuleConfigData = {};
             }
             //set default configuration for cover page.
-            defaultTitle = lang.clone(dojo.appConfigData.ModuleDefaultsConfig.title);
-            defaultTitle.text = dojo.bookInfo[dojo.currentBookIndex].BookConfigData.title;
-            coverPage = lang.clone(dojo.appConfigData.CoverPageLayout);
+            defaultTitle = lang.clone(appGlobals.appConfigData.ModuleDefaultsConfig.title);
+            defaultTitle.text = appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.title;
+            coverPage = lang.clone(appGlobals.appConfigData.CoverPageLayout);
             coverPage.title = defaultTitle.text;
-            dojo.bookInfo[dojo.currentBookIndex].BookConfigData.CoverPage = coverPage;
-            dojo.bookInfo[dojo.currentBookIndex].ModuleConfigData.CoverPage = {};
+            appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.CoverPage = coverPage;
+            appGlobals.bookInfo[appGlobals.currentBookIndex].ModuleConfigData.CoverPage = {};
             this._removeClass(this.mapBookNextPage, "esriNextDisabled");
             return coverPage;
         },
@@ -144,20 +145,20 @@ define([
             divEditPage = domConstruct.create("div", { "class": "esriMapBookEditPage" }, dom.byId('esriMapPages'));
             divEditPageHeader = domConstruct.create("div", { "class": "esriEditPageHeader" }, divEditPage);
             divEditPageList = domConstruct.create("div", { "class": "esriEditPageOptionList" }, divEditPageHeader);
-            if (dojo.bookInfo[dojo.currentBookIndex].BookConfigData.CoverPage) {
-                //create cover page icon in page carousal.
+            if (appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.CoverPage) {
+                //create cover page icon in page carousel.
                 imgOptionList = domConstruct.create("div", { "class": "esriEditPageOptionListImg" }, divEditPageList);
                 imgEditCoverPage = domConstruct.create("div", { "index": 0, "class": "esriEditPageImg esriBookPage esriPageSelected esriCoverPageImg" }, imgOptionList);
                 imgEditCoverPage.innerHTML = nls.coverPageText;
-                //display cover page if cover page icon is selected from page carousal.
+                //display cover page if cover page icon is selected from page carousel.
                 on(imgEditCoverPage, "click", lang.hitch(this, this._gotoPage, 0));
             }
             imgOptionList = domConstruct.create("div", { "class": "esriEditPageOptionListImg" }, divEditPageList);
-            //create content page icon in page carousal.
+            //create content page icon in page carousel.
             imgEditContentPage = domConstruct.create("div", { "index": 1, "class": "esriEditPageImg esriBookPage esriContentPageImg" }, imgOptionList);
             imgEditContentPage.innerHTML = nls.contentPageText;
             on(imgEditContentPage, "click", lang.hitch(this, function () {
-                if (dojo.bookInfo[dojo.currentBookIndex].BookConfigData.ContentPage) {
+                if (appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.ContentPage) {
                     //display content page.
                     this._gotoPage(1);
                 } else {
@@ -174,9 +175,9 @@ define([
             this._createPageSlider();
             this._createDnDModuleList();
             //create template/layout options page.
-            this._renderTemplateOptionPage(divEditPageBody, dojo.appConfigData.BookPageLayouts, true);
-            this._renderTemplateOptionPage(divEditPageBody, dojo.appConfigData.ContentPageLayouts, false);
-            tempContHeight = dojo.window.getBox().h - domStyle.get(dom.byId("mapBookHeaderContainer"), "height") - domStyle.get(query(".esriEditPageHeader")[0], "height") - 10;
+            this._renderTemplateOptionPage(divEditPageBody, appGlobals.appConfigData.BookPageLayouts, true);
+            this._renderTemplateOptionPage(divEditPageBody, appGlobals.appConfigData.ContentPageLayouts, false);
+            tempContHeight = dojoWindow.getBox().h - domStyle.get(dom.byId("mapBookHeaderContainer"), "height") - domStyle.get(query(".esriEditPageHeader")[0], "height") - 10;
             domStyle.set(divEditPageBody, "height", tempContHeight + 'px');
             //perform actions to display layout options to create new page.
             on(divAddNewPage, "click", lang.hitch(this, function () {
@@ -258,38 +259,38 @@ define([
 
             selectedTempIndex = parseInt(domAttr.get(query('.selectedTemplate')[0], "index"), 10);
             //get index of last page of the book.
-            pageIndex = this.mapBookDetails[dojo.currentBookIndex].length;
+            pageIndex = this.mapBookDetails[appGlobals.currentBookIndex].length;
 
             if (isBookPageLayout) {
                 // create new book page, if 'isBookPageLayout' is true.
-                if (!dojo.bookInfo[dojo.currentBookIndex].BookConfigData.ContentPage) {
-                    if (this.mapBookDetails[dojo.currentBookIndex][1] !== "EmptyContent") {
-                        this.mapBookDetails[dojo.currentBookIndex].push("EmptyContent");
+                if (!appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.ContentPage) {
+                    if (this.mapBookDetails[appGlobals.currentBookIndex][1] !== "EmptyContent") {
+                        this.mapBookDetails[appGlobals.currentBookIndex].push("EmptyContent");
                         pageIndex++;
                     }
                 }
                 //get default attributes from config to create new page.
-                newPage = dojo.appConfigData.BookPageLayouts[selectedTempIndex];
+                newPage = appGlobals.appConfigData.BookPageLayouts[selectedTempIndex];
                 newPage.type = "BookPages";
                 if (currentPageIndex > 0 && currentPageIndex !== pageIndex - 1) {
                     pageIndex = currentPageIndex + 1;
                     flag = true;
                 }
-                newPage.title = nls.pageText + ' ' + (pageIndex - 1);
-                newPage.index = this.mapBookDetails[dojo.currentBookIndex].length;
+                newPage.title = nls.pageText + (pageIndex - 1);
+                newPage.index = this.mapBookDetails[appGlobals.currentBookIndex].length;
             } else {
                 //create content page
-                if (this.mapBookDetails[dojo.currentBookIndex][1] === "EmptyContent") {
+                if (this.mapBookDetails[appGlobals.currentBookIndex][1] === "EmptyContent") {
                     flag = true;
                 }
                 //get default attributes from config to create content page.
-                newPage = dojo.appConfigData.ContentPageLayouts[selectedTempIndex];
+                newPage = appGlobals.appConfigData.ContentPageLayouts[selectedTempIndex];
                 newPage.type = "ContentPage";
                 newPage.title = nls.contentsPageTitle;
                 //update bookInfo array.
-                if (dojo.bookInfo[dojo.currentBookIndex].BookConfigData.ContentPage) {
-                    dojo.bookInfo[dojo.currentBookIndex].BookConfigData.ContentPage = {};
-                    dojo.bookInfo[dojo.currentBookIndex].ModuleConfigData.ContentPage = {};
+                if (appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.ContentPage) {
+                    appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.ContentPage = {};
+                    appGlobals.bookInfo[appGlobals.currentBookIndex].ModuleConfigData.ContentPage = {};
                 }
                 newPage.index = 1;
             }
@@ -327,7 +328,7 @@ define([
         _reArrangePageList: function (currentPageIndex) {
             var currentListItemIndex = this.currentIndex, selectedPage, bookPages, mapBookDetails, bookListdata,
                 refListItemIndex = currentPageIndex;
-            if (this.mapBookDetails[dojo.currentBookIndex][1] === "EmptyContent") {
+            if (this.mapBookDetails[appGlobals.currentBookIndex][1] === "EmptyContent") {
                 currentListItemIndex--;
                 refListItemIndex--;
             }
@@ -335,9 +336,9 @@ define([
             //insert new page after the current opened page.
             dom.byId('mapBookPagesUList').insertBefore(selectedPage, dom.byId('mapBookPagesUList').children[refListItemIndex]);
 
-            bookPages = dojo.bookInfo[dojo.currentBookIndex].ModuleConfigData.BookPages;
-            bookListdata = dojo.bookInfo[dojo.currentBookIndex].BookConfigData.BookPages;
-            mapBookDetails = this.mapBookDetails[dojo.currentBookIndex];
+            bookPages = appGlobals.bookInfo[appGlobals.currentBookIndex].ModuleConfigData.BookPages;
+            bookListdata = appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.BookPages;
+            mapBookDetails = this.mapBookDetails[appGlobals.currentBookIndex];
             //update book JSON.
             mapBookDetails.splice(currentPageIndex, 0, mapBookDetails[this.currentIndex]);
             bookPages.splice(currentPageIndex - 2, 0, bookPages[this.currentIndex - 2]);
@@ -357,19 +358,19 @@ define([
         */
         _deletePage: function () {
             var selectedPage, pageModuleContent, bookPages, bookPageIndex, _self = this, pageIndex = this.currentIndex, index, moduleIndex;
-            if (this.mapBookDetails[dojo.currentBookIndex][1] === "EmptyContent") {
+            if (this.mapBookDetails[appGlobals.currentBookIndex][1] === "EmptyContent") {
                 pageIndex--;
             }
             selectedPage = dom.byId('mapBookPagesUList').children[pageIndex];
             domStyle.set(selectedPage, "display", "none");
-            bookPages = dojo.bookInfo[dojo.currentBookIndex].ModuleConfigData.BookPages;
+            bookPages = appGlobals.bookInfo[appGlobals.currentBookIndex].ModuleConfigData.BookPages;
             bookPageIndex = this.currentIndex - 2;
             pageModuleContent = query('.esriMapBookColContent', selectedPage);
             //delete page data from book JSON.
-            this.mapBookDetails[dojo.currentBookIndex].splice(bookPageIndex + 2, 1);
-            dojo.bookInfo[dojo.currentBookIndex].BookConfigData.BookPages.splice(bookPageIndex, 1);
+            this.mapBookDetails[appGlobals.currentBookIndex].splice(bookPageIndex + 2, 1);
+            appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.BookPages.splice(bookPageIndex, 1);
             for (index = bookPageIndex; index < bookPages.length - 1; index++) {
-                this.mapBookDetails[dojo.currentBookIndex][index].index = index;
+                this.mapBookDetails[appGlobals.currentBookIndex][index].index = index;
             }
             //destroy webmap instance of the deleted page.
             array.forEach(pageModuleContent, function (node) {
@@ -379,11 +380,11 @@ define([
                 }
             });
             //update bookInfo array.
-            dojo.bookInfo[dojo.currentBookIndex].ModuleConfigData.BookPages.splice(bookPageIndex, 1);
+            appGlobals.bookInfo[appGlobals.currentBookIndex].ModuleConfigData.BookPages.splice(bookPageIndex, 1);
             dom.byId('mapBookPagesUList').removeChild(selectedPage);
             this._createPageSlider();
             this._setSliderWidth();
-            if (this.mapBookDetails[dojo.currentBookIndex][pageIndex] === "EmptyContent") {
+            if (this.mapBookDetails[appGlobals.currentBookIndex][pageIndex] === "EmptyContent") {
                 this.currentIndex--;
             }
             //display page, which was next to the deleted page.

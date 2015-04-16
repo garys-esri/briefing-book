@@ -1,7 +1,9 @@
 ﻿
-/*-------------styles for modules of print preview page------------*/ 
+/*-------------styles for modules of print preview page------------*/
 .esriMapBookTitle {
     color: #fff;
+    display: block !important;
+    width: 95% !important;
 }
 
 .esriMapBookPageListItem {
@@ -27,16 +29,20 @@
     overflow: visible !important;
 }
 
-.esriMapBookTitle {
-    display: block;
-}
-
 .esriImageModule {
     width: 100% !important;
     height: 100% !important;
-    page-break-after:always;
+    page-break-after: always;
 }
 
 .esriAutoWidth {
     width: 100% !important;
+}
+
+.esriLegendContainer {
+    display: none;
+}
+
+.esriLegendContainerOpen {
+    display: block !important;
 }

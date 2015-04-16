@@ -1,4 +1,4 @@
-﻿/*global define,dojo,dijit*/
+﻿/*global define,dojo,dijit,appGlobals*/
 /*jslint browser:true,sloppy:true,nomen:true,unparam:true,plusplus:true,indent:4 */
 /*
  | Copyright 2014 Esri
@@ -90,28 +90,30 @@ define([
 
         /**
         * display share dialog
-        * @param{array} pages is the json array ,which contains data about selected book's pages
         * @memberOf widgets/share-book/share-book
         */
         _showShareDialog: function () {
             //show check box selected if respective sharing option is true
-            if (dojo.bookInfo[dojo.currentBookIndex].BookConfigData.shareWithEveryone) {
+            if (appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.shareWithEveryone) {
                 domClass.add(dom.byId("chkBoxeveryone"), "esriCheckBoxChecked");
+            } else {
+                domClass.remove(dom.byId("chkBoxeveryone"), "esriCheckBoxChecked");
             }
-
-            if (dojo.bookInfo[dojo.currentBookIndex].BookConfigData.shareWithOrg) {
+            if (appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.shareWithOrg) {
                 domClass.add(dom.byId("chkBoxorg"), "esriCheckBoxChecked");
+            } else {
+                domClass.remove(dom.byId("chkBoxorg"), "esriCheckBoxChecked");
             }
-
-            if (dojo.bookInfo[dojo.currentBookIndex].BookConfigData.copyProtected) {
+            if (appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.copyProtected) {
                 domClass.add(dom.byId("chkBoxcopyProtected"), "esriCheckBoxChecked");
+            } else {
+                domClass.remove(dom.byId("chkBoxcopyProtected"), "esriCheckBoxChecked");
             }
             dijit.byId("ShareBookDialog").show();
         },
 
         /**
         * set parameter for sharing selected book
-        * @param{array} shareOptions is the json array ,which contains available sharing options for book
         * @memberOf widgets/share-book/share-book
         */
         _shareBook: function (shareOptions) {
@@ -136,13 +138,13 @@ define([
         _setSharingOptions: function (shareKey, isChecked) {
             switch (shareKey) {
             case "everyone":
-                dojo.bookInfo[dojo.currentBookIndex].BookConfigData.shareWithEveryone = isChecked;
+                appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.shareWithEveryone = isChecked;
                 break;
             case "org":
-                dojo.bookInfo[dojo.currentBookIndex].BookConfigData.shareWithOrg = isChecked;
+                appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.shareWithOrg = isChecked;
                 break;
             case "copyProtected":
-                dojo.bookInfo[dojo.currentBookIndex].BookConfigData.copyProtected = isChecked;
+                appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.copyProtected = isChecked;
                 break;
             }
         },
@@ -186,20 +188,20 @@ define([
             queryParam = {
                 itemType: "text",
                 f: 'json',
-                everyone: dojo.bookInfo[dojo.currentBookIndex].BookConfigData.shareWithEveryone,
-                org: dojo.bookInfo[dojo.currentBookIndex].BookConfigData.shareWithOrg,
+                everyone: appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.shareWithEveryone,
+                org: appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.shareWithOrg,
                 groups: []
             };
             //share newly created book to the configured group if 'DisplayBook' is set to 'group'.
             if (isShareToGroup) {
-                queryParam.groups = dojo.appConfigData.DisplayGroup;
+                queryParam.groups = appGlobals.appConfigData.DisplayGroup;
             }
-            currentItemId = dojo.bookInfo[dojo.currentBookIndex].BookConfigData.itemId;
+            currentItemId = appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.itemId;
             //set request url for sharing item on AGOL
             requestUrl = _self._portal.getPortalUser().userContentUrl;
             // set folder id to update sharing permission for the book to its current folder
-            if (dojo.bookInfo[dojo.currentBookIndex].folderId) {
-                requestUrl += '/' + dojo.bookInfo[dojo.currentBookIndex].folderId;
+            if (appGlobals.bookInfo[appGlobals.currentBookIndex].folderId) {
+                requestUrl += '/' + appGlobals.bookInfo[appGlobals.currentBookIndex].folderId;
             }
             requestUrl += '/items/' + currentItemId + '/share';
 
@@ -208,6 +210,7 @@ define([
                 url: requestUrl,
                 content: queryParam
             }, { usePost: true }).then(function (result) {
+                topic.publish("saveBookHandler");
                 dijit.byId("ShareBookDialog").hide();
             }, function (err) {
                 if (err.messageCode === "GWM_0003") {

@@ -46,7 +46,7 @@
 	width: 100%;
 	opacity: 0.3;
 	filter: alpha(opacity=30);
-	z-index: 1050;
+	z-index: 1040;
 	background: url('../images/loading-indicator-grey.gif') #dadada no-repeat center center;
 	display: block;
 }
@@ -670,7 +670,7 @@
 .esriLegendContainer {
 	width: 50%;
 	max-width: 250px;
-	right: -51%;
+	right: -52%;
 	height: 65%;
 	max-height: 250px;
 	top: 30px;

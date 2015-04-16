@@ -1,4 +1,4 @@
-﻿/*global define,dojo,dijit*/
+﻿/*global define,dojo,dijit,appGlobals*/
 /*jslint browser:true,sloppy:true,nomen:true,unparam:true,plusplus:true,indent:4 */
 /*
  | Copyright 2014 Esri
@@ -58,8 +58,8 @@ define([
             domConstruct.create("span", { "id": "esriPaginationSpan" }, this.paginationDiv);
             //create UI for buttons in application header.
             this._createApplicationHeader();
-            document.title = dojo.appConfigData.ApplicationName;
-            domAttr.set(this.mapBookTitle, "innerHTML", dojo.appConfigData.ApplicationName);
+            document.title = appGlobals.appConfigData.ApplicationName;
+            domAttr.set(this.mapBookTitle, "innerHTML", appGlobals.appConfigData.ApplicationName);
             this._displayHomePage();
         },
 
@@ -71,6 +71,7 @@ define([
             this._setApplicationLogo();
             this._setApplicationFavicon();
             this._createHomeIcon();
+            this._createPrintIcon();
             this._createNewBookIcon();
             this._createShareBookIcon();
             this._createDeleteBookIcon();
@@ -79,17 +80,16 @@ define([
             this._createEditBookIcon();
             this._createSaveBookIcon();
             this._createDeletePageIcon();
-            this._createPrintIcon();
             this._createTOCIcon();
             this._createSignInBtn();
         },
 
         /**
-        * set application icon,  dojo.appConfigData.ApplicationIcon is set in config
+        * set application icon,  appGlobals.appConfigData.ApplicationIcon is set in config
         * @memberOf widgets/app-header/app-header
         */
         _setApplicationLogo: function () {
-            domStyle.set(this.applicationLogoIcon, "backgroundImage", 'url(' + dojo.appConfigData.ApplicationIcon + ')');
+            domStyle.set(this.applicationLogoIcon, "backgroundImage", 'url(' + appGlobals.appConfigData.ApplicationIcon + ')');
         },
 
         /**
@@ -100,11 +100,11 @@ define([
         _setApplicationFavicon: function () {
             if (dom.byId('appFavicon')) {
                 //set fav icon path from the config.
-                domAttr.set(dom.byId('appFavicon'), "href", dojo.appConfigData.ApplicationFavicon);
+                domAttr.set(dom.byId('appFavicon'), "href", appGlobals.appConfigData.ApplicationFavicon);
             }
             if (dom.byId('homeFavicon')) {
                 //set home icon path from the config.
-                domAttr.set(dom.byId('homeFavicon'), "href", dojo.appConfigData.AppHomeScreenIcon);
+                domAttr.set(dom.byId('homeFavicon'), "href", appGlobals.appConfigData.AppHomeScreenIcon);
             }
         },
 
@@ -117,7 +117,7 @@ define([
             homeButtonDiv = domConstruct.create("div", { "class": "esrihomeButtonIcon", "style": "display:none", "title": nls.homeTitle }, this.applicationHeaderWidgetsContainer);
             //perform actions to display home page/gallery page when home icon is clicked.
             this.own(on(homeButtonDiv, "click", function () {
-                if (dojo.bookInfo[dojo.currentBookIndex].BookConfigData.UnSaveEditsExists) {
+                if (appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.UnSaveEditsExists) {
                     //get confirmation from user to display gallery page if current book has unsaved changes.
                     _self.alertDialog._setContent(nls.validateUnSavedEdits, 1).then(function (confirmHomePageView) {
                         if (confirmHomePageView) {
@@ -139,7 +139,7 @@ define([
             //reset application URL if it has parameters.
             this._removeParamFromAppUrl();
             topic.publish("destroyWebmapHandler");
-            if (dojo.appConfigData.AuthoringMode) {
+            if (appGlobals.appConfigData.AuthoringMode) {
                 //disable editing mode of current book.
                 this._disableEditing();
             }
@@ -167,7 +167,7 @@ define([
             var shareBookIcon, _self = this;
             shareBookIcon = domConstruct.create("div", { "class": "esriShareBookIcon", "style": "display:none", "title": nls.shareBookTitle }, this.applicationHeaderWidgetsContainer);
             this.own(on(shareBookIcon, "click", function () {
-                if (dojo.bookInfo[dojo.currentBookIndex].BookConfigData.itemId !== nls.defaultItemId) {
+                if (appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.itemId !== nls.defaultItemId) {
                     topic.publish("showShareDialogHandler");
                 } else {
                     _self.alertDialog._setContent(nls.bookNotSaved, 0);
@@ -198,14 +198,14 @@ define([
         */
         _createCopyBookIcon: function () {
             var copyBookIcon, _self = this;
-            copyBookIcon = domConstruct.create("div", { "class": "esriCopyBookIcon", "title": nls.copyBookShelf }, this.applicationHeaderWidgetsContainer);
+            copyBookIcon = domConstruct.create("div", { "class": "esriCopyBookIcon", "title": nls.copyBookTitle }, this.applicationHeaderWidgetsContainer);
             this.own(on(copyBookIcon, "click", function () {
                 //hide TOC panel.
                 _self._toggleContainer(dom.byId("divContentListPanel"), query(".esriTocIcon")[0], true);
                 //allow copying of book if book is not copy protected else display alert message.
-                if (!dojo.bookInfo[dojo.currentBookIndex].BookConfigData.copyProtected || dojo.bookInfo[dojo.currentBookIndex].BookConfigData.owner === dojo.currentUser) {
+                if (!appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.copyProtected || appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.owner === appGlobals.currentUser) {
                     //display alert message if book has some unsaved changes.
-                    if (dojo.bookInfo[dojo.currentBookIndex].BookConfigData.UnSaveEditsExists) {
+                    if (appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.UnSaveEditsExists) {
                         _self.alertDialog._setContent(nls.validateUnSavedEdits, 1).then(function (confirmCopy) {
                             if (confirmCopy) {
                                 _self._removeParamFromAppUrl();
@@ -263,7 +263,7 @@ define([
         */
         _createSaveBookIcon: function () {
             var saveBookIcon, _self = this;
-            saveBookIcon = domConstruct.create("div", { "class": "esriSaveIcon", "title": nls.saveBookShelf }, this.applicationHeaderWidgetsContainer);
+            saveBookIcon = domConstruct.create("div", { "class": "esriSaveIcon", "title": nls.saveBookTitle }, this.applicationHeaderWidgetsContainer);
             this.own(on(saveBookIcon, "click", function () {
                 //publish event of "mapbook-config-loader" to save current book on AGOL.
                 _self._toggleContainer(dom.byId("divContentListPanel"), query(".esriTocIcon")[0], true);
@@ -283,7 +283,7 @@ define([
                 //get confirmation from user to delete currently opened page of the book.
                 _self.alertDialog._setContent(nls.confirmPageDeleting, 1).then(function (confirmDeleting) {
                     if (confirmDeleting) {
-                        dojo.bookInfo[dojo.currentBookIndex].BookConfigData.UnSaveEditsExists = true;
+                        appGlobals.bookInfo[appGlobals.currentBookIndex].BookConfigData.UnSaveEditsExists = true;
                         topic.publish("deletePageHandler");
                     }
                 });
@@ -299,7 +299,7 @@ define([
             printIconDiv = domConstruct.create("div", { "class": "esriPrintIcon", "style": "display:none", "title": nls.printTitle }, this.applicationHeaderWidgetsContainer);
             this.own(on(printIconDiv, "click", function () {
                 //display print preview page if all modules are loaded else display alert message.
-                if (!dojo.moduleLoadingCount) {
+                if (!appGlobals.moduleLoadingCount) {
                     //set print preview window's properties.
                     //set height & width and enable scrolling of window.
                     pdfWinSize = '"width=' + dom.byId("mapBookPagesUList").clientWidth + ', height=' + dom.byId("mapBookPagesUList").clientHeight + ', scrollbars=1"';
@@ -352,7 +352,7 @@ define([
         _removeParamFromAppUrl: function () {
             var href = parent.location.href.split('?');
             if (href.length > 1 && history.pushState) {
-                history.pushState({ "id": 1 }, dojo.appConfigData.ApplicationName, href[0]);
+                history.pushState({ "id": 1 }, appGlobals.appConfigData.ApplicationName, href[0]);
             }
         },
 
@@ -363,21 +363,21 @@ define([
         _addNewBook: function () {
             var bookIndex, newBook;
             //set default settings to create new book.
-            bookIndex = dojo.bookInfo.length;
+            bookIndex = appGlobals.bookInfo.length;
             newBook = {};
             newBook.title = nls.mapbookDefaultTitle;
             newBook.UnSaveEditsExists = true;
             topic.publish("getFullUserNameHandler", newBook);
-            newBook.owner = dojo.currentUser;
+            newBook.owner = appGlobals.currentUser;
             newBook.itemId = nls.defaultItemId;
             //by default this book will not be allowed to copy
             newBook.copyProtected = false;
-            dojo.bookInfo[bookIndex] = {};
-            dojo.bookInfo[bookIndex].ModuleConfigData = {};
-            dojo.bookInfo[bookIndex].BookConfigData = newBook;
-            dojo.bookInfo[bookIndex].BookConfigData.shareWithEveryone = false;
-            dojo.bookInfo[bookIndex].BookConfigData.shareWithOrg = false;
-            if (dojo.bookInfo.length > 0) {
+            appGlobals.bookInfo[bookIndex] = {};
+            appGlobals.bookInfo[bookIndex].ModuleConfigData = {};
+            appGlobals.bookInfo[bookIndex].BookConfigData = newBook;
+            appGlobals.bookInfo[bookIndex].BookConfigData.shareWithEveryone = false;
+            appGlobals.bookInfo[bookIndex].BookConfigData.shareWithOrg = false;
+            if (appGlobals.bookInfo.length > 0) {
                 domStyle.set(query('.esriDeleteBookIcon')[0], "display", "block");
             }
             topic.publish("addBookHandler", bookIndex);
@@ -391,7 +391,7 @@ define([
         _displayHomePage: function () {
             //if app is running in tablet or i-pad then disable editing mode.
             if (window.hasOwnProperty && window.hasOwnProperty('orientation')) {
-                dojo.appConfigData.AuthoringMode = false;
+                appGlobals.appConfigData.AuthoringMode = false;
             }
             //set header icon visibility according to editable mode.
             domStyle.set(query(".esriEditIcon")[0], "display", "none");
@@ -405,8 +405,8 @@ define([
             domStyle.set(dom.byId("mapBookScrollContent"), "display", "block");
             domStyle.set(query(".esriShareBookIcon")[0], "display", "none");
             domStyle.set(query('.esriPrintIcon')[0], "display", "none");
-            domAttr.set(this.mapBookTitle, "innerHTML", dojo.appConfigData.ApplicationName);
-            if (dojo.appConfigData.AuthoringMode) {
+            domAttr.set(this.mapBookTitle, "innerHTML", appGlobals.appConfigData.ApplicationName);
+            if (appGlobals.appConfigData.AuthoringMode) {
                 //display editing options if book is opened in authoring mode.
                 domStyle.set(query('.esriDeleteBookIcon')[0], "display", "block");
                 domStyle.set(query(".esriNewBookIcon")[0], "display", "block");
@@ -420,7 +420,7 @@ define([
                 domStyle.set(query(".esriRefreshIcon")[0], "display", "none");
             }
             //set book name as application header text
-            domAttr.set(this.mapBookTitle, "innerHTML", dojo.appConfigData.ApplicationName);
+            domAttr.set(this.mapBookTitle, "innerHTML", appGlobals.appConfigData.ApplicationName);
             if (query(".esriPrevious")[0] && query(".esriNext")[0]) {
                 domStyle.set(query(".esriPrevious")[0], "visibility", "hidden");
                 domStyle.set(query(".esriNext")[0], "visibility", "hidden");
@@ -436,6 +436,8 @@ define([
             domStyle.set(query(".esrihomeButtonIcon")[0], "display", "block");
             domStyle.set(query(".esriCopyBookIcon")[0], "display", "block");
             if (domStyle.get(query(".esriMapBookEditPage")[0], "display") === "block") {
+                //show print icon if edit mode is disabled.
+                domStyle.set(query('.esriPrintIcon')[0], "display", "block");
                 this._disableEditing();
             } else {
                 domClass.add(editBtn, "esriHeaderIconSelected");

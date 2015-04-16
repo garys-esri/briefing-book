@@ -45,7 +45,7 @@ define([], function () {
         DisplayBook: "organization", //organization, all, group
 
         // Set group id if 'DisplayBook' is set to 'group'
-        DisplayGroup: "", // "918908e2f84c4dc8a0ab0beb2849ea6c", "0aec46fd1c264403b28469dac01ecd2c", //"f31c2a1296d84ea892bb557a796e5ebd",
+        DisplayGroup: "",
 
         // The URL for your ArcGIS Online Organization or Portal for ArcGIS site,
         // e.g., something like "https://myOrg.maps.arcgis.com" for an Online Organization
@@ -62,7 +62,7 @@ define([], function () {
 
         // Location of your proxy file
         ProxyURL: "/proxy/proxy.ashx",
-        
+
         // max webmap count
         MaxWebMapCount: 100,
 
@@ -86,7 +86,7 @@ define([], function () {
 
         // Video URL for Vimeo
         VimeoVideoUrl: "https://player.vimeo.com/video/",
-        
+
         /* module Defaults contains default settings for each and every module */
         /* cover page layout contains layout for index page*/
         CoverPageLayout: {
@@ -221,7 +221,7 @@ define([], function () {
             },
             "title": {
                 type: "text",
-                text: "Untitled",
+                text: "untitled",
                 height: 30,
                 uid: "title" // in pixel
             },

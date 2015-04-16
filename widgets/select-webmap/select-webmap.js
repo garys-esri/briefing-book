@@ -1,4 +1,4 @@
-﻿/*global define,dojo,dijit,console*/
+﻿/*global define,dojo,dijit,console,appGlobals*/
 /*jslint browser:true,sloppy:true,nomen:true,unparam:true,plusplus:true,indent:4 */
 /*
  | Copyright 2014 Esri
@@ -28,11 +28,12 @@ define([
     "dojo/dom",
     "dojo/on",
     "dojo/query",
+    "dojo/string",
     "dojo/store/Memory",
     "dojo/topic",
     "dojo/i18n!nls/localized-strings",
     "../mapbook-collection/mapbook-utility"
-], function (declare, lang, _WidgetBase, ComboBox, TextBox, domConstruct, domAttr, domStyle, domClass, dom, on, query, Memory, topic, nls, mapbookUtility) {
+], function (declare, lang, _WidgetBase, ComboBox, TextBox, domConstruct, domAttr, domStyle, domClass, dom, on, query, dojoString, Memory, topic, nls, mapbookUtility) {
     return declare([_WidgetBase, mapbookUtility], {
         _portal: null,
         _selectedWebmap: null,
@@ -46,7 +47,7 @@ define([
         */
         startup: function () {
             //set access url for webmaps
-            this._webmapURL = dojo.appConfigData.PortalURL + '/home/webmap/viewer.html?webmap=';
+            this._webmapURL = appGlobals.appConfigData.PortalURL + '/home/webmap/viewer.html?webmap=';
             //get portal object.
             topic.subscribe("_getPortal", lang.hitch(this, function (portal) {
                 this._portal = portal;
@@ -183,7 +184,7 @@ define([
                 sortField: "title",
                 sortOrder: "asc",
                 start: 1,
-                num: dojo.appConfigData.MaxWebMapCount
+                num: appGlobals.appConfigData.MaxWebMapCount
             };
             //display loading text.
             dom.byId("divWebmapContent").innerHTML = nls.loadingWebmap;
@@ -208,7 +209,7 @@ define([
                 paginationFooter, noOfpages, pageContentIndex;
             this._selectedWebmap = null;
             domConstruct.empty(dom.byId("divWebmapContent"));
-            noOfpages = Math.ceil(response.results.length / dojo.appConfigData.WebmapPerPage);
+            noOfpages = Math.ceil(response.results.length / appGlobals.appConfigData.WebmapPerPage);
             webmapIndex = 0;
             if (response.results.length > 0) {
                 //create webmap page
@@ -218,7 +219,7 @@ define([
                         domClass.add(divWebmapPage, "displayNone");
                     }
                     // create node for webmap thumbnails & titles
-                    for (pageContentIndex = 0; pageContentIndex < dojo.appConfigData.WebmapPerPage; pageContentIndex++) {
+                    for (pageContentIndex = 0; pageContentIndex < appGlobals.appConfigData.WebmapPerPage; pageContentIndex++) {
                         if (response.results[webmapIndex]) {
                             divWebmapThumbnail = domConstruct.create("div", { "class": "esriWebmapThumbnailDiv" }, divWebmapPage);
                             this._createWebmapThumbnail(divWebmapThumbnail, response, webmapIndex);
@@ -253,7 +254,7 @@ define([
                 }
                 query('.esriTotalPageCount')[0].innerHTML = noOfpages;
                 domAttr.set(query('.esriTotalPageCount')[0], "totalWebmap", response.results.length);
-                domAttr.set(query('.esriTotalPageCount')[0], "webmapPerPage", dojo.appConfigData.WebmapPerPage);
+                domAttr.set(query('.esriTotalPageCount')[0], "webmapPerPage", appGlobals.appConfigData.WebmapPerPage);
                 if (noOfpages === 1) {
                     domClass.add(query('.esriPaginationNext')[0], "disableNavigation");
                 } else {
@@ -281,22 +282,24 @@ define([
                 webmapThumbnailSrc = response.results[webmapIndex].thumbnailUrl;
             } else {
                 //set default image for webmap thumbnail from config .
-                webmapThumbnailSrc = dojo.appConfigData.DefaultWebmapThumbnail;
+                webmapThumbnailSrc = appGlobals.appConfigData.DefaultWebmapThumbnail;
             }
             domConstruct.create("img", { "src": webmapThumbnailSrc, "class": "esriWebmapThumbnail" }, divWebmapThumbnail);
             //set webmap id as webmapID attribute of webmap thumbnail node.
             domAttr.set(divWebmapThumbnail, "webmapID", this._webmapURL + response.results[webmapIndex].id);
             //set webmap title as webmapTitle attribute of webmap thumbnail node.
             domAttr.set(divWebmapThumbnail, "webmapTitle", response.results[webmapIndex].title);
-            //set webmap summary as webmapCaption attribute of webmap thumbnail node.
-            domAttr.set(divWebmapThumbnail, "webmapCaption", response.results[webmapIndex].snippet);
             //create node to display title of webmap.
             domConstruct.create("div", { "class": "esriWebmapTitle", "innerHTML": response.results[webmapIndex].title }, divWebmapThumbnail);
             imgWebmapDescript = domConstruct.create("div", { "class": "esriWebmapDescript" }, divWebmapThumbnail);
             //display configured text for summary if it is not available in webmap object.
             if (response.results[webmapIndex].snippet !== null) {
+                //set webmap summary as webmapCaption attribute of webmap thumbnail node.
+                domAttr.set(divWebmapThumbnail, "webmapCaption", response.results[webmapIndex].snippet);
                 imgWebmapDescript.innerHTML = response.results[webmapIndex].snippet;
             } else {
+                //set empty string as webmapCaption attribute of webmap thumbnail node.
+                domAttr.set(divWebmapThumbnail, "webmapCaption", "");
                 imgWebmapDescript.innerHTML = nls.descriptionNotAvailable;
             }
         },
@@ -360,7 +363,7 @@ define([
                 for (inputIndex = 0; inputIndex < inputFields.length; inputIndex++) {
                     moduleInputs[inputIndex] = {};
                     inputKey = domAttr.get(inputFields[inputIndex], "inputKey");
-                    if (this._selectedWebmap[inputKey]) {
+                    if (this._selectedWebmap.hasOwnProperty(inputKey)) {
                         moduleInputs[inputIndex].value = this._selectedWebmap[inputKey];
                         query('.dijitInputInner', inputFields[inputIndex])[0].value = this._selectedWebmap[inputKey];
                     }
@@ -387,7 +390,7 @@ define([
             startIndex = pageIndex * webmapPerPage + 1;
             webmapCount = webmapCount + startIndex - 1;
             if (webmapCount) {
-                webmapCountDetails = dojo.string.substitute(nls.webmapCountStatus, { "start": startIndex, "end": webmapCount, "total": totalWebmap });
+                webmapCountDetails = dojoString.substitute(nls.webmapCountStatus, { "start": startIndex, "end": webmapCount, "total": totalWebmap });
                 query('.esriWebmapCountDiv')[0].innerHTML = webmapCountDetails;
                 domAttr.set(query('.esriCurrentPageIndex')[0], "currentPage", pageIndex);
                 query('.esriCurrentPageIndex')[0].innerHTML = pageIndex + 1;
@@ -424,9 +427,9 @@ define([
             //set search drop-down readable only.
             dijitInputContainer.textbox.readOnly = true;
             dijit.byId("searchWebmapComboBox").item = stateStore.data[0];
-            dijitInputContainer.onChange = lang.hitch(this, function () {
+            on(dijitInputContainer, "change", lang.hitch(this, function () {
                 this._getSelectedSearchOption();
-            });
+            }));
         },
 
         /**
@@ -444,7 +447,7 @@ define([
                 queryParam = "orgid:" + this._portal.id;
                 break;
             case "mycontent":
-                queryParam = "owner: " + dojo.currentUser;
+                queryParam = "owner: " + appGlobals.currentUser;
                 break;
             }
             //get searched string from textbox.
@@ -479,7 +482,6 @@ define([
                 this._getSelectedSearchOption();
             })));
         }
-
     });
 });
 
