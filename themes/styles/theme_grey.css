@@ -47,7 +47,7 @@
 	opacity: 0.3;
 	filter: alpha(opacity=30);
 	z-index: 99;
-	background: url('../images/loadingIndicator-grey.gif') #dadada no-repeat center center;
+	background: url('../images/loadingIndicator-grey.GIF') #dadada no-repeat center center;
 	display: none;
 }
 
@@ -901,7 +901,7 @@ h2 {
 	height: 30px;
 	width: 30px;
 	display: table-cell;
-	background-image: url('../images/loadingIndicator-grey.gif');
+	background-image: url('../images/loadingIndicator-grey.GIF');
 	background-repeat: no-repeat;
 }
 
