@@ -25,7 +25,7 @@ define([
     "widgets/mapBookCollection/mapBookCollection",
     "widgets/mapBookConfigLoader/mapBookConfigLoader",
     "widgets/selectWebmap/selectWebmap",
-    "widgets/shareBook/shareBook",
+    "widgets/shareBook/sharebook",
     "dojo/domReady!"
 ], function (declare, nls, _WidgetBase, AlertBox, AppHeader, MapBookCollection, MapBookConfigLoader, SelectWebmap, ShareBook) {
     return declare([_WidgetBase], {
